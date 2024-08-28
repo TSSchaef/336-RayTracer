@@ -1,20 +1,83 @@
 #include <stdio.h>
 
 #include "vector3.h"
+#include "ray.h"
+
+#define ASPECT_RATIO (16.0 / 9.0)
+
+color ray_color(ray r){
+    vector3 unit_direction;
+    copy(&unit_direction, r.dir);
+    unit_vector(&unit_direction);
+
+    double a = 0.5 * (unit_direction.e[y] + 1.0);
+    color white, blue;
+    init(&white, 1.0, 1.0, 1.0);
+    init(&blue, 0.5, 0.7, 1.0);
+    scale(&blue, a);
+    scale(&white, 1.0 - a);
+    add_vector(&white, blue);
+    return white;
+}
 
 int main(int argc, char *argv[]){
-    int image_width = 256;
-    int image_height = 256;
+    int image_width = 400;
+    int image_height = (int) image_width / ASPECT_RATIO; 
+    image_height = (image_height < 1) ? 1 : image_height;
+    double viewport_height = 2.0;
+    double viewport_width = viewport_height * (((double) image_width )/ image_height);
+
+    double focal_length = 1.0;
+    point3 camera_center;
+    init(&camera_center, 0, 0, 0);
+
+    vector3 viewport_u, viewport_v;
+    init(&viewport_u, viewport_width, 0, 0);
+    init(&viewport_v, 0, -viewport_height, 0);
+
+    vector3 pixel_delta_u, pixel_delta_v;
+    copy(&pixel_delta_u, viewport_u);
+    scale(&pixel_delta_u, 1.0/image_width);
+    copy(&pixel_delta_v, viewport_v);
+    scale(&pixel_delta_v, 1.0/image_height); 
+   
+    point3 viewport_upper_left;
+    init(&viewport_upper_left, -viewport_width/2, viewport_height/2, -focal_length);
+    add_vector(&viewport_upper_left, camera_center);
+
+    point3 pixel00_loc;
+    copy(&pixel00_loc, pixel_delta_u);
+    add_vector(&pixel00_loc, pixel_delta_v);
+    scale(&pixel00_loc, 0.5);
+    add_vector(&pixel00_loc, viewport_upper_left);
+
 
     printf("P3\n %d %d\n255\n", image_width, image_height);
 
-    color c;
     int i, j;
-    for(i = 0; i < image_height; i++) {
+    for(j = 0; j < image_height; j++) {
         fprintf(stderr, "\rScanlines remaining: %d", image_height - j);
         fflush(stderr);
-        for(j = 0; j < image_width; j++){
-            init(&c, (j + 0.0) / (image_width - 1), (i + 0.0)/ (image_height - 1), 0.0);
+        for(i = 0; i < image_width; i++){
+            point3 pixel_center, u_offset, v_offset;
+            copy(&u_offset, pixel_delta_u);
+            copy(&v_offset, pixel_delta_v);
+            copy(&pixel_center, pixel00_loc);
+            scale(&u_offset, i);
+            scale(&v_offset, j);
+            add_vector(&pixel_center, u_offset);
+            add_vector(&pixel_center, v_offset);
+
+            vector3 ray_direction;
+            copy(&ray_direction, camera_center);
+            invert(&ray_direction);
+            add_vector(&ray_direction, pixel_center);
+
+            ray r;
+            init_ray(&r, camera_center, ray_direction);
+
+            color c = ray_color(r);
+
             print_color(c);
         }
     }

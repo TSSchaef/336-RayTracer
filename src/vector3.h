@@ -17,10 +17,11 @@ enum{
 };
 
 void init(vector3 *v, double e1, double e2, double e3);
+void copy(vector3 *v, vector3 w);
 
 void invert(vector3 *v);
 
-void add(vector3 *v, vector3 w);
+void add_vector(vector3 *v, vector3 w);
 void scale(vector3 *v, double t);
 double length(vector3 v);
 double length_squared(vector3 v);

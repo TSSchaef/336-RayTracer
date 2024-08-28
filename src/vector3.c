@@ -6,13 +6,19 @@ void init(vector3 *v, double e1, double e2, double e3){
     v->e[2] = e3;
 }
 
+void copy(vector3 *v, vector3 w){
+    v->e[0] = w.e[0];
+    v->e[1] = w.e[1];
+    v->e[2] = w.e[2];
+}
+
 void invert(vector3 *v){
    v->e[0] *= -1;
    v->e[1] *= -1;
    v->e[2] *= -1;
 }
 
-void add(vector3 *v, vector3 w){
+void add_vector(vector3 *v, vector3 w){
     v->e[0] += w.e[0];
     v->e[1] += w.e[1];
     v->e[2] += w.e[2];
