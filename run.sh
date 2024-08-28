@@ -1,0 +1,1 @@
+./ray-tracer > image.ppm
