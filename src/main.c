@@ -5,7 +5,41 @@
 
 #define ASPECT_RATIO (16.0 / 9.0)
 
+double hit_sphere(point3 center, double radius, ray r){
+    vector3 oc;
+    copy(&oc, r.orig);
+    invert(&oc);
+    add_vector(&oc, center);
+
+    double a = dot(r.dir, r.dir);
+    double b = -2.0 * dot(r.dir, oc);
+    double c = dot(oc, oc) - radius*radius;
+
+    double discriminant = b*b - 4*a*c;
+    if(discriminant < 0){
+        return -1;
+    } else {
+        return (-b - sqrt(discriminant)) / (2.0 * a);
+    }
+}
+
 color ray_color(ray r){
+    point3 sphere;
+    init(&sphere, 0, 0, -1);
+    double t = hit_sphere(sphere, 0.5, r);
+    if(t > 0){
+        vector3 N;
+        copy(&N, at(r, t));
+        invert(&sphere);
+        add_vector(&N, sphere);
+        unit_vector(&N);
+
+        color c;
+        init(&c, N.e[x] + 1, N.e[y] + 1, N.e[z] + 1);
+        scale(&c, 0.5);
+        return c;
+    }
+
     vector3 unit_direction;
     copy(&unit_direction, r.dir);
     unit_vector(&unit_direction);
