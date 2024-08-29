@@ -1,7 +1,7 @@
 #Makefile
 
-ray-tracer: main.o vector3.o ray.o 
-	gcc main.o vector3.o ray.o -o ray-tracer -lm
+ray-tracer: main.o vector3.o ray.o sphere.o hittable.o
+	gcc main.o vector3.o ray.o sphere.o hittable.o -o ray-tracer -lm
 
 main.o: src/main.c src/vector3.h
 	gcc -Wall -Werror -g src/main.c -c
@@ -12,13 +12,13 @@ vector3.o: src/vector3.h src/vector3.c
 ray.o: src/ray.h src/ray.c
 	gcc -Wall -Werror -g src/ray.c -c
 
+hittable.o: src/hittable.h src/hittable.c
+	gcc -Wall -Werror -g src/hittable.c -c
+
+sphere.o: src/sphere.h src/sphere.c
+	gcc -Wall -Werror -g src/sphere.c -c
+
 #Second way to build the program with debugging enabled
-
-#ray-tracer-debug: main-debug.o
-#	gcc main-debug.o -o ray-tracer-debug
-
-#main-debug.o: src/main.c
-#	gcc -Wall -Werror -g src/main.c -c main-debug.o
 
 .PHONY: clean
 
