@@ -96,10 +96,16 @@ double clamp_color(double x){
     return x;
 }
 
+double linear_to_gamma(double x){
+    if(x > 0)
+        return sqrt(x);
+    return 0;
+}
+
 void print_color(color c){
-    int rbyte = (int) 256 * clamp_color(c.e[r]);
-    int gbyte = (int) 256 * clamp_color(c.e[g]); 
-    int bbyte = (int) 256 * clamp_color(c.e[b]); 
+    int rbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[r]));
+    int gbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[g])); 
+    int bbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[b])); 
 
     printf("%d %d %d\n", rbyte, gbyte, bbyte);
 }

@@ -9,7 +9,9 @@ color ray_color(ray r, int depth, hittable_list *world){
 
     hit_record h;
     if(hit(world, r, 0.001, DBL_MAX, &h)){
-        vector3 dir = random_on_hemisphere(h.normal);
+        vector3 dir = random_unit_vector();
+        add_vector(&dir, h.normal);
+
         ray bounce;
         init_ray(&bounce, h.p, dir);
         color c = ray_color(bounce, depth - 1, world);
