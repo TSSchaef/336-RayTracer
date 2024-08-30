@@ -54,10 +54,16 @@ void print(vector3 v){
     printf("%lf %lf %lf\n", v.e[0], v.e[1], v.e[2]);
 }
 
+double clamp_color(double x){
+    if(x < 0.0) return 0.0;
+    if(x > 0.999) return 0.999;
+    return x;
+}
+
 void print_color(color c){
-    int rbyte = (int) 255.999 * c.e[r];
-    int gbyte = (int) 255.999 * c.e[g];
-    int bbyte = (int) 255.999 * c.e[b];
+    int rbyte = (int) 256 * clamp_color(c.e[r]);
+    int gbyte = (int) 256 * clamp_color(c.e[g]); 
+    int bbyte = (int) 256 * clamp_color(c.e[b]); 
 
     printf("%d %d %d\n", rbyte, gbyte, bbyte);
 }

@@ -27,7 +27,9 @@ color ray_color(ray r, hittable_list *world){
 void initialize(camera *c){
     c->aspect_ratio = (c->aspect_ratio > 0) ? c->aspect_ratio : 1.0; 
     c->image_width = (c->image_width > 0) ? c->image_width : 100; 
+    c->samples_per_pixel = (c->samples_per_pixel > 0) ? c->samples_per_pixel : 10;
 
+    c->pixel_samples_scale = 1.0 / c->samples_per_pixel;
     c->image_height = (int) c->image_width / c->aspect_ratio; 
     c->image_height = (c->image_height < 1) ? 1 : c->image_height;
 
@@ -56,6 +58,32 @@ void initialize(camera *c){
     add_vector(&(c->pixel00_loc), viewport_upper_left);
 }
 
+
+ray get_ray(camera *c, int i, int j){
+    //sample square
+    point3 pixel_sample;
+    init(&pixel_sample, RAND_DOUBLE - 0.5, RAND_DOUBLE - 0.5, 0);
+
+    point3 u_offset, v_offset;
+    copy(&u_offset, c->pixel_delta_u);
+    copy(&v_offset, c->pixel_delta_v);
+    scale(&u_offset, i + pixel_sample.e[x]);
+    scale(&v_offset, j + pixel_sample.e[y]);
+    copy(&pixel_sample, c->pixel00_loc);
+    add_vector(&pixel_sample, u_offset);
+    add_vector(&pixel_sample, v_offset);
+
+    vector3 ray_direction;
+    copy(&ray_direction, c->center);
+    invert(&ray_direction);
+    add_vector(&ray_direction, pixel_sample);
+            
+    ray r;
+    init_ray(&r, c->center, ray_direction);
+
+    return r;
+}
+
 void render(camera *c, hittable_list *world){
     initialize(c);
 
@@ -66,26 +94,17 @@ void render(camera *c, hittable_list *world){
         fprintf(stderr, "\rScanlines remaining: %d", c->image_height - j);
         fflush(stderr);
         for(i = 0; i < c->image_width; i++){
-            point3 pixel_center, u_offset, v_offset;
-            copy(&u_offset, c->pixel_delta_u);
-            copy(&v_offset, c->pixel_delta_v);
-            copy(&pixel_center, c->pixel00_loc);
-            scale(&u_offset, i);
-            scale(&v_offset, j);
-            add_vector(&pixel_center, u_offset);
-            add_vector(&pixel_center, v_offset);
+            color pixel_color;
+            init(&pixel_color, 0, 0, 0);
 
-            vector3 ray_direction;
-            copy(&ray_direction, c->center);
-            invert(&ray_direction);
-            add_vector(&ray_direction, pixel_center);
-
-            ray r;
-            init_ray(&r, c->center, ray_direction);
-
-            color c = ray_color(r, world);
-
-            print_color(c);
+            int sample;
+            for(sample = 0; sample < c->samples_per_pixel; sample++){
+                ray r = get_ray(c, i, j);
+                add_vector(&pixel_color, ray_color(r, world));
+            }
+            
+            scale(&pixel_color, c->pixel_samples_scale);
+            print_color(pixel_color);
         }
     }
     fprintf(stderr, "\rDone.                       \n");

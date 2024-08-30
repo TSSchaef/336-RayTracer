@@ -13,6 +13,8 @@ typedef struct {
     point3 pixel00_loc;
     vector3 pixel_delta_u;
     vector3 pixel_delta_v;
+    int samples_per_pixel;
+    double pixel_samples_scale;
 } camera;
 
 void initialize(camera *c);
