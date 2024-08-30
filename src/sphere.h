@@ -4,8 +4,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-#include "vector3.h"
-#include "ray.h"
+#include "util.h"
 #include "hittable.h"
 
 typedef struct {
@@ -14,7 +13,7 @@ typedef struct {
 } sphere;
 
 void init_sphere(sphere *s, point3 center, double radius);
-bool hit_sphere(sphere s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
+bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
 
 
 #endif

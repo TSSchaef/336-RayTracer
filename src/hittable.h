@@ -3,8 +3,7 @@
 
 #include <stdbool.h>
 
-#include "ray.h"
-#include "vector3.h"
+#include "util.h"
 
 typedef struct {
     point3 p;
@@ -14,5 +13,6 @@ typedef struct {
 } hit_record;
 
 void set_face_normal(hit_record *h, ray r, vector3 outward_normal);
+void copy_hit_record(hit_record *h, hit_record to_copy);
 
 #endif

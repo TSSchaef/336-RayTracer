@@ -5,15 +5,16 @@ void init_sphere(sphere *s, point3 center, double radius){
     s->radius = (radius > 0) ? radius : 0;
 }
 
-bool hit_sphere(sphere s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
+bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     vector3 oc;
+    
     copy(&oc, r.orig);
     invert(&oc);
-    add_vector(&oc, s.center);
+    add_vector(&oc, ((sphere*)s)->center);
 
     double a = length_squared(r.dir);
     double h = dot(r.dir, oc);
-    double c = length_squared(oc) - s.radius*s.radius;
+    double c = length_squared(oc) - ((sphere*)s)->radius*((sphere*)s)->radius;
 
     double discriminant = h*h - a*c;
     //checking if the ray intersects the sphere
@@ -36,10 +37,10 @@ bool hit_sphere(sphere s, ray r, double ray_tmin, double ray_tmax, hit_record *r
     rec->t = root;
     rec->p = at(r, root);
     vector3 outward_normal;
-    copy(&(outward_normal), s.center);
+    copy(&(outward_normal), ((sphere*)s)->center);
     invert(&(outward_normal));
     add_vector(&(outward_normal), rec->p);
-    scale(&(outward_normal), 1.0 / s.radius);
+    scale(&(outward_normal), 1.0 / ((sphere*)s)->radius);
     set_face_normal(rec, r, outward_normal);
 
     return true;

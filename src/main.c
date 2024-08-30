@@ -1,23 +1,19 @@
 #include <stdio.h>
 
-#include "vector3.h"
-#include "ray.h"
+#include "util.h"
+#include "hittable_list.h"
 #include "sphere.h"
 
 #define ASPECT_RATIO (16.0 / 9.0)
 
-color ray_color(ray r){
-    point3 center;
-    init(&center, 0, 0, -1);
-    sphere s;
-    init_sphere(&s, center, 0.5);
-    hit_record h;
-    if(hit_sphere(s, r, 0, 2, &h)){
-        vector3 N;
-        copy(&N, h.normal);
+hittable_list world;
 
+color ray_color(ray r){
+    hit_record h;
+    if(hit(&world, r, 0, DBL_MAX, &h)){
         color c;
-        init(&c, N.e[x] + 1, N.e[y] + 1, N.e[z] + 1);
+        init(&c, 1, 1, 1);
+        add_vector(&c, h.normal);
         scale(&c, 0.5);
         return c;
     }
@@ -37,6 +33,20 @@ color ray_color(ray r){
 }
 
 int main(int argc, char *argv[]){
+    point3 center;
+    init(&center, 0, 0, -1);
+    sphere s;
+    init_sphere(&s, center, 0.5);
+    
+    init_list(&world, &s, &hit_sphere);
+
+    point3 center2;
+    init(&center2, 0, -100.5, -1);
+    sphere s2;
+    init_sphere(&s2, center2, 100);
+
+    add_list(&world, &s2, &hit_sphere);
+
     int image_width = 400;
     int image_height = (int) image_width / ASPECT_RATIO; 
     image_height = (image_height < 1) ? 1 : image_height;
@@ -98,5 +108,8 @@ int main(int argc, char *argv[]){
         }
     }
     fprintf(stderr, "\rDone.                       \n");
+
+    delete_list(&world); 
+
     return 0;
 }
