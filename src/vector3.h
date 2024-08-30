@@ -29,6 +29,12 @@ double length_squared(vector3 v);
 double dot(vector3 v, vector3 w);
 void unit_vector(vector3 *v);
 
+vector3 random_in_unit_sphere();
+vector3 random_unit_vector();
+vector3 random_on_hemisphere(vector3 normal);
+vector3 random_default_vector();
+vector3 random_vector(double min, double max);
+
 void print(vector3 v);
 void print_color(color c);
 

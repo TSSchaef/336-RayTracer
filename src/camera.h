@@ -15,6 +15,7 @@ typedef struct {
     vector3 pixel_delta_v;
     int samples_per_pixel;
     double pixel_samples_scale;
+    int max_depth;
 } camera;
 
 void initialize(camera *c);

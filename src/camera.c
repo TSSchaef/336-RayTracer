@@ -1,11 +1,18 @@
 #include "camera.h"
 
-color ray_color(ray r, hittable_list *world){
+color ray_color(ray r, int depth, hittable_list *world){
+    if(depth <= 0){
+        color black;
+        init(&black, 0, 0, 0);
+        return black;
+    }
+
     hit_record h;
-    if(hit(world, r, 0, DBL_MAX, &h)){
-        color c;
-        init(&c, 1, 1, 1);
-        add_vector(&c, h.normal);
+    if(hit(world, r, 0.001, DBL_MAX, &h)){
+        vector3 dir = random_on_hemisphere(h.normal);
+        ray bounce;
+        init_ray(&bounce, h.p, dir);
+        color c = ray_color(bounce, depth - 1, world);
         scale(&c, 0.5);
         return c;
     }
@@ -28,6 +35,7 @@ void initialize(camera *c){
     c->aspect_ratio = (c->aspect_ratio > 0) ? c->aspect_ratio : 1.0; 
     c->image_width = (c->image_width > 0) ? c->image_width : 100; 
     c->samples_per_pixel = (c->samples_per_pixel > 0) ? c->samples_per_pixel : 10;
+    c->max_depth = (c->max_depth > 0) ? c->max_depth : 10;
 
     c->pixel_samples_scale = 1.0 / c->samples_per_pixel;
     c->image_height = (int) c->image_width / c->aspect_ratio; 
@@ -91,7 +99,7 @@ void render(camera *c, hittable_list *world){
 
     int i, j;
     for(j = 0; j < c->image_height; j++) {
-        fprintf(stderr, "\rScanlines remaining: %d", c->image_height - j);
+        fprintf(stderr, "\rScanlines remaining: %d        ", c->image_height - j);
         fflush(stderr);
         for(i = 0; i < c->image_width; i++){
             color pixel_color;
@@ -100,7 +108,7 @@ void render(camera *c, hittable_list *world){
             int sample;
             for(sample = 0; sample < c->samples_per_pixel; sample++){
                 ray r = get_ray(c, i, j);
-                add_vector(&pixel_color, ray_color(r, world));
+                add_vector(&pixel_color, ray_color(r, c->max_depth, world));
             }
             
             scale(&pixel_color, c->pixel_samples_scale);

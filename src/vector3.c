@@ -1,4 +1,5 @@
 #include "vector3.h"
+#include "util.h"
 
 void init(vector3 *v, double e1, double e2, double e3){
     v->e[0] = e1;
@@ -48,6 +49,41 @@ void unit_vector(vector3 *v){
     v->e[0] /= l;
     v->e[1] /= l;
     v->e[2] /= l;
+}
+
+vector3 random_default_vector(){
+    vector3 v;
+    init(&v, RAND_DOUBLE, RAND_DOUBLE, RAND_DOUBLE);
+    return v;
+}
+
+vector3 random_vector(double min, double max){
+    vector3 v;
+    init(&v, RAND_DBL(min, max), RAND_DBL(min, max), RAND_DBL(min, max));
+    return v;
+}
+
+vector3 random_in_unit_sphere(){
+    while(1){
+        vector3 v = random_vector(-1, 1);
+        if(length_squared(v) < 1)
+            return v;
+    }
+}
+
+vector3 random_unit_vector(){
+    vector3 v = random_in_unit_sphere();
+    unit_vector(&v);
+    return v;
+}
+
+vector3 random_on_hemisphere(vector3 normal){
+    vector3 v = random_unit_vector();
+    if(dot(v, normal) > 0.0){
+        return v;
+    } 
+    invert(&v);
+    return v;
 }
 
 void print(vector3 v){
