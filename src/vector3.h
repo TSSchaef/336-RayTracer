@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct vector3{
     double e[3];
@@ -25,6 +26,10 @@ void add_vector(vector3 *v, vector3 w);
 void scale(vector3 *v, double t);
 double length(vector3 v);
 double length_squared(vector3 v);
+bool near_zero(vector3 v);
+
+vector3 attenuate(vector3 v, vector3 w);
+vector3 reflect(vector3 v, vector3 n);
 
 double dot(vector3 v, vector3 w);
 void unit_vector(vector3 *v);

@@ -2,7 +2,7 @@
 #define CAMERA_H
 
 #include "util.h"
-#include "hittable.h"
+#include "material.h"
 #include "hittable_list.h"
 
 typedef struct {

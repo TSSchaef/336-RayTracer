@@ -9,6 +9,7 @@ typedef struct {
 } ray;
 
 void init_ray(ray *r, point3 origin, vector3 direction);
+void copy_ray(ray *r, ray to_copy);
 point3 at(ray r, double t);
 
 #endif

@@ -9,14 +9,16 @@ color ray_color(ray r, int depth, hittable_list *world){
 
     hit_record h;
     if(hit(world, r, 0.001, DBL_MAX, &h)){
-        vector3 dir = random_unit_vector();
-        add_vector(&dir, h.normal);
-
         ray bounce;
-        init_ray(&bounce, h.p, dir);
-        color c = ray_color(bounce, depth - 1, world);
-        scale(&c, 0.5);
-        return c;
+        color attenuation;
+
+        if((*h.mat.scatter_func)(r, &h, &attenuation, &bounce)){
+            return attenuate(attenuation, ray_color(bounce, depth - 1, world));            
+        }
+
+        color black;
+        init(&black, 0, 0, 0);
+        return black;
     }
 
     vector3 unit_direction;

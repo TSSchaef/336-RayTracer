@@ -1,7 +1,7 @@
 #Makefile
 
-ray-tracer: main.o vector3.o ray.o sphere.o hittable.o hittable_list.o camera.o
-	gcc main.o vector3.o ray.o sphere.o hittable.o hittable_list.o camera.o -o ray-tracer -lm
+ray-tracer: main.o vector3.o ray.o sphere.o material.o hittable_list.o camera.o
+	gcc main.o vector3.o ray.o sphere.o material.o hittable_list.o camera.o -o ray-tracer -lm
 
 main.o: src/main.c src/vector3.h
 	gcc -Wall -Werror -g src/main.c -c
@@ -12,8 +12,8 @@ vector3.o: src/vector3.h src/vector3.c
 ray.o: src/ray.h src/ray.c
 	gcc -Wall -Werror -g src/ray.c -c
 
-hittable.o: src/hittable.h src/hittable.c
-	gcc -Wall -Werror -g src/hittable.c -c
+material.o: src/material.h src/material.c
+	gcc -Wall -Werror -g src/material.c -c
 
 sphere.o: src/sphere.h src/sphere.c
 	gcc -Wall -Werror -g src/sphere.c -c

@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "hittable.h"
 #include "util.h"
+#include "material.h"
 
 typedef bool (*fptr_is_hit)(void *, ray, double, double, hit_record *);
 

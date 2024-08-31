@@ -1,8 +1,9 @@
 #include "sphere.h"
 
-void init_sphere(sphere *s, point3 center, double radius){
+void init_sphere(sphere *s, point3 center, double radius, material m){
     copy(&(s->center), center);
     s->radius = (radius > 0) ? radius : 0;
+    copy_material(&(s->mat), m);
 }
 
 bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
@@ -36,6 +37,7 @@ bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *re
     //placing information about ray collision into hit record
     rec->t = root;
     rec->p = at(r, root);
+    copy_material(&(rec->mat), ((sphere*)s)->mat);
     vector3 outward_normal;
     copy(&(outward_normal), ((sphere*)s)->center);
     invert(&(outward_normal));

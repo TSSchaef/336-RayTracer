@@ -39,6 +39,11 @@ double length_squared(vector3 v){
     return v.e[0]*v.e[0] + v.e[1]*v.e[1] + v.e[2]*v.e[2];
 }
 
+bool near_zero(vector3 v){
+    double s = 0.00000001;
+    return (v.e[0] < s && v.e[0] > -1 * s) && (v.e[1] < s && v.e[1] > -1 * s) && (v.e[2] < s && v.e[2] > -1 * s);
+}
+
 double dot(vector3 v, vector3 w){
     return v.e[0]*w.e[0] + v.e[1]*w.e[1] + v.e[2]*w.e[2];
 }
@@ -49,6 +54,23 @@ void unit_vector(vector3 *v){
     v->e[0] /= l;
     v->e[1] /= l;
     v->e[2] /= l;
+}
+
+vector3 attenuate(vector3 v, vector3 w){
+    vector3 ans;
+    copy(&ans, w);
+    ans.e[0] *= v.e[0];
+    ans.e[1] *= v.e[1];
+    ans.e[2] *= v.e[2];
+    return ans;
+}
+
+vector3 reflect(vector3 v, vector3 n){
+    vector3 ans;
+    copy(&ans, n);
+    scale(&ans, -2 * dot(v, n));
+    add_vector(&ans, v);
+    return ans;
 }
 
 vector3 random_default_vector(){
