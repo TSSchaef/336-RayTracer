@@ -48,6 +48,13 @@ double dot(vector3 v, vector3 w){
     return v.e[0]*w.e[0] + v.e[1]*w.e[1] + v.e[2]*w.e[2];
 }
 
+vector3 cross(vector3 u, vector3 v){
+   vector3 ans;
+   init(&ans, (u.e[1] * v.e[2]) - (u.e[2] * v.e[1]), (u.e[2] * v.e[0]) - (u.e[0] * v.e[2]), (u.e[0] * v.e[1]) - (u.e[1] * v.e[0]));
+
+   return ans;
+}
+
 void unit_vector(vector3 *v){
     double l = length(*v);
 

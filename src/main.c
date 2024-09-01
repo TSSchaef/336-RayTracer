@@ -12,6 +12,29 @@ int main(int argc, char *argv[]){
     hittable_list world;
 
     //initializing world
+    /*double R = cos(PI/4);
+    point3 center1;
+    init(&center1, -R, 0, -1);
+    sphere s1;
+    color c1;
+    init(&c1,0, 0, 1);
+    material m1;
+    init_lambertian(&m1, c1);
+    init_sphere(&s1, center1, R, m1);
+    
+    init_list(&world, &s1, &hit_sphere);
+
+    point3 center2;
+    init(&center2, R, 0, -1);
+    sphere s2;
+    color c2;
+    init(&c2, 1, 0, 0);
+    material m2;
+    init_lambertian(&m2, c2);
+    init_sphere(&s2, center2, R, m2);
+
+    add_list(&world, &s2, &hit_sphere);*/
+
     point3 center1;
     init(&center1, 0, 0, -1.2);
     sphere s1;
@@ -52,8 +75,7 @@ int main(int argc, char *argv[]){
     init_metal(&m4, c4, 1.0);
     init_sphere(&s4, center4, 0.5, m4);
 
-    add_list(&world, &s4, &hit_sphere);
-
+    add_list(&world, &s4, &hit_sphere); 
 
     //initializing camera
     camera cam;
@@ -61,6 +83,16 @@ int main(int argc, char *argv[]){
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
+    cam.vfov = 20;
+    
+    point3 f, a, v;
+    init(&f, -2, 2, 1);
+    init(&a, 0, 0, -1);
+    init(&v, 0, 1, 0);
+
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
     
     render(&cam, &world);
 

@@ -45,15 +45,30 @@ void initialize(camera *c){
     c->image_height = (int) c->image_width / c->aspect_ratio; 
     c->image_height = (c->image_height < 1) ? 1 : c->image_height;
 
-    init(&(c->center), 0, 0, 0);
+    copy(&(c->center), c->lookfrom);
 
-    double focal_length = 1.0;
-    double viewport_height = 2.0;
+    invert(&(c->lookat));
+    add_vector(&(c->lookfrom), c->lookat);
+    double focal_length = length(c->lookfrom);
+    c->vfov = (c->vfov > 0) ? c->vfov : 90;
+    double theta = DEG_TO_RAD(c->vfov);
+    double h = tan(theta/2);
+    double viewport_height = 2 * h * focal_length; 
     double viewport_width = viewport_height * (((double) c->image_width )/ c->image_height);
 
+    unit_vector(&(c->lookfrom));
+    copy(&(c->w), c->lookfrom); 
+
+    copy(&(c->u), cross(c->vup, c->w));
+    unit_vector(&(c->u));
+
+    copy(&(c->v), cross(c->w, c->u));
+
     vector3 viewport_u, viewport_v;
-    init(&viewport_u, viewport_width, 0, 0);
-    init(&viewport_v, 0, -viewport_height, 0);
+    copy(&viewport_u, c->u);
+    scale(&viewport_u, viewport_width);
+    copy(&viewport_v, c->v);
+    scale(&viewport_v, -1 * viewport_height);
 
     copy(&(c->pixel_delta_u), viewport_u);
     scale(&(c->pixel_delta_u), 1.0/c->image_width);
@@ -61,7 +76,13 @@ void initialize(camera *c){
     scale(&(c->pixel_delta_v), 1.0/c->image_height); 
    
     point3 viewport_upper_left;
-    init(&viewport_upper_left, -viewport_width/2, viewport_height/2, -focal_length);
+    copy(&viewport_upper_left, c->w);
+    scale(&viewport_upper_left, focal_length);
+    invert(&viewport_upper_left);
+    scale(&viewport_u, -1.0/2);
+    scale(&viewport_v, -1.0/2);
+    add_vector(&viewport_upper_left, viewport_u);
+    add_vector(&viewport_upper_left, viewport_v);
     add_vector(&viewport_upper_left, c->center);
 
     copy(&(c->pixel00_loc), (c->pixel_delta_u));
