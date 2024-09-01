@@ -37,6 +37,7 @@ vector3 cross(vector3 v, vector3 w);
 void unit_vector(vector3 *v);
 
 vector3 random_in_unit_sphere();
+vector3 random_in_unit_disk();
 vector3 random_unit_vector();
 vector3 random_on_hemisphere(vector3 normal);
 vector3 random_default_vector();

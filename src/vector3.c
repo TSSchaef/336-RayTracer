@@ -124,6 +124,15 @@ vector3 random_in_unit_sphere(){
     }
 }
 
+vector3 random_in_unit_disk(){
+    while(1){
+        vector3 p;
+        init(&p, RAND_DBL(-1, 1), RAND_DBL(-1, 1), 0);
+        if(length_squared(p) < 1)
+            return p;
+    }
+}
+
 vector3 random_unit_vector(){
     vector3 v = random_in_unit_sphere();
     unit_vector(&v);

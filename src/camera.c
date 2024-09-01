@@ -44,18 +44,18 @@ void initialize(camera *c){
     c->pixel_samples_scale = 1.0 / c->samples_per_pixel;
     c->image_height = (int) c->image_width / c->aspect_ratio; 
     c->image_height = (c->image_height < 1) ? 1 : c->image_height;
+    c->focus_dist = (c->focus_dist >= 0) ? c->focus_dist : 10;
 
     copy(&(c->center), c->lookfrom);
 
-    invert(&(c->lookat));
-    add_vector(&(c->lookfrom), c->lookat);
-    double focal_length = length(c->lookfrom);
     c->vfov = (c->vfov > 0) ? c->vfov : 90;
     double theta = DEG_TO_RAD(c->vfov);
     double h = tan(theta/2);
-    double viewport_height = 2 * h * focal_length; 
+    double viewport_height = 2 * h * c->focus_dist; 
     double viewport_width = viewport_height * (((double) c->image_width )/ c->image_height);
 
+    invert(&(c->lookat));
+    add_vector(&(c->lookfrom), c->lookat);
     unit_vector(&(c->lookfrom));
     copy(&(c->w), c->lookfrom); 
 
@@ -77,7 +77,7 @@ void initialize(camera *c){
    
     point3 viewport_upper_left;
     copy(&viewport_upper_left, c->w);
-    scale(&viewport_upper_left, focal_length);
+    scale(&viewport_upper_left, c->focus_dist);
     invert(&viewport_upper_left);
     scale(&viewport_u, -1.0/2);
     scale(&viewport_v, -1.0/2);
@@ -89,8 +89,27 @@ void initialize(camera *c){
     add_vector(&(c->pixel00_loc), (c->pixel_delta_v));
     scale(&(c->pixel00_loc), 0.5);
     add_vector(&(c->pixel00_loc), viewport_upper_left);
+
+    double defocus_radius = c->focus_dist * tan(DEG_TO_RAD(c->defocus_angle / 2.0));
+    copy(&(c->defocus_disk_u), c->u);
+    scale(&(c->defocus_disk_u), defocus_radius);
+    copy(&(c->defocus_disk_v), c->v);
+    scale(&(c->defocus_disk_v), defocus_radius);
 }
 
+point3 defocus_disk_sample(camera *c){
+    point3 p = random_in_unit_disk();
+    point3 u, v;
+    copy(&u, c->defocus_disk_u);
+    scale(&u, p.e[0]);
+    copy(&v, c->defocus_disk_v);
+    scale(&v, p.e[1]);
+
+    copy(&p, u);
+    add_vector(&p, v);
+    add_vector(&p, c->center); 
+    return p;
+}
 
 ray get_ray(camera *c, int i, int j){
     //sample square
@@ -106,13 +125,15 @@ ray get_ray(camera *c, int i, int j){
     add_vector(&pixel_sample, u_offset);
     add_vector(&pixel_sample, v_offset);
 
+    ray r;
+    point3 ray_orig;
+    (c->defocus_angle <= 0) ? copy(&ray_orig, c->center) : copy(&ray_orig, defocus_disk_sample(c));
+
     vector3 ray_direction;
-    copy(&ray_direction, c->center);
+    copy(&ray_direction, ray_orig); 
     invert(&ray_direction);
     add_vector(&ray_direction, pixel_sample);
-            
-    ray r;
-    init_ray(&r, c->center, ray_direction);
+    init_ray(&r, ray_orig, ray_direction);
 
     return r;
 }

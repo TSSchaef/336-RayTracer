@@ -90,6 +90,9 @@ int main(int argc, char *argv[]){
     init(&a, 0, 0, -1);
     init(&v, 0, 1, 0);
 
+    cam.defocus_angle = 10.0;
+    cam.focus_dist = 3.4;
+
     copy(&(cam.lookfrom), f);
     copy(&(cam.lookat), a);
     copy(&(cam.vup), v);
