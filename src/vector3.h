@@ -30,6 +30,7 @@ bool near_zero(vector3 v);
 
 vector3 attenuate(vector3 v, vector3 w);
 vector3 reflect(vector3 v, vector3 n);
+vector3 refract(vector3 v, vector3 n, double etai_over_etat);
 
 double dot(vector3 v, vector3 w);
 void unit_vector(vector3 *v);

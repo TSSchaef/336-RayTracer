@@ -67,3 +67,46 @@ void init_metal(material *m, color a, double f){
     m->fuzz = (f < 1 && f >= 0) ? f : 1;
     m->scatter_func = &metal_scatter;
 }
+
+double reflectance(double cosine, double refraction_index) {
+    //Using Schlick's approximation
+    double r0 = (1 - refraction_index) / (1 + refraction_index);
+    r0 = r0 * r0;
+    return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
+
+bool dielectric_scatter(ray ray_in, 
+        struct hit_record *rec, color *attenuation, ray *ray_out){
+   //using fuzz as refraction index and albedo as white
+    copy(attenuation, rec->mat.albedo);
+
+    double ri = rec->front_face ? (1.0/ rec->mat.fuzz) : rec->mat.fuzz;
+
+    vector3 unit_dir;
+    copy(&unit_dir, ray_in.dir);
+    unit_vector(&unit_dir);
+
+    invert(&unit_dir);
+    double cos_theta = dot(unit_dir, rec->normal);
+    invert(&unit_dir);
+    cos_theta = (cos_theta > 1.0) ? 1.0 : cos_theta;
+    double sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+
+    bool cannot_refract = (ri * sin_theta) > 1.0;
+
+    vector3 direction;
+    if(cannot_refract || reflectance(cos_theta, ri) > RAND_DOUBLE){
+        copy(&direction, reflect(unit_dir, rec->normal));
+    } else {
+        copy(&direction, refract(unit_dir, rec->normal, ri));
+    }
+
+    init_ray(ray_out, rec->p, direction);
+    return true;
+}
+
+void init_dielectric(material *m, double f){
+    init(&(m->albedo), 1.0, 1.0, 1.0);
+    m->fuzz = f; 
+    m->scatter_func = &dielectric_scatter;
+}

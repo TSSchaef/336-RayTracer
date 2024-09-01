@@ -36,6 +36,8 @@ void init_metal(material *m, color a, double fuzz);
 bool metal_scatter(ray ray_in, 
         struct hit_record *rec, color *attenuation, ray *ray_out);
 
-
+void init_dielectric(material *m, double fuzz);
+bool dielectric_scatter(ray ray_in, 
+        struct hit_record *rec, color *attenuation, ray *ray_out);
 
 #endif

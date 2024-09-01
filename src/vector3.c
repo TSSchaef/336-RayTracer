@@ -73,6 +73,30 @@ vector3 reflect(vector3 v, vector3 n){
     return ans;
 }
 
+vector3 refract(vector3 v, vector3 n, double etai_over_etat){
+    invert(&v);
+    double cos_theta = dot(v, n); 
+    cos_theta = (cos_theta > 1.0) ? 1.0 : cos_theta;
+    invert(&v);
+
+    vector3 r_out_perp;
+    copy(&r_out_perp, n);
+    scale(&r_out_perp, cos_theta);
+    add_vector(&r_out_perp, v);
+    scale(&r_out_perp, etai_over_etat);
+
+    double num = 1.0 - length_squared(r_out_perp);
+    num = (num < 0) ? -1 * num : num;
+    num = -1 * sqrt(num);
+    vector3 r_out_parallel;
+    copy(&r_out_parallel, n);
+    scale(&r_out_parallel, num);
+
+    add_vector(&r_out_perp, r_out_parallel);
+
+    return r_out_perp;
+}
+
 vector3 random_default_vector(){
     vector3 v;
     init(&v, RAND_DOUBLE, RAND_DOUBLE, RAND_DOUBLE);

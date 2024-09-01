@@ -37,10 +37,8 @@ int main(int argc, char *argv[]){
     point3 center3;
     init(&center3, -1, 0, -1);
     sphere s3;
-    color c3;
-    init(&c3, 0.8, 0.8, 0.8);
     material m3;
-    init_metal(&m3, c3, 0.3);
+    init_dielectric(&m3, 1.00/1.33);
     init_sphere(&s3, center3, 0.5, m3);
 
     add_list(&world, &s3, &hit_sphere);
