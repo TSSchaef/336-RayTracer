@@ -17,6 +17,7 @@ void init_aabb_points(aabb *box, point3 a, point3 b);
 void add_boxes(aabb *box, aabb add);
 
 void copy_box(aabb *box, aabb to_copy);
+int longest_axis(aabb box);
 
 bool hit_box(void *box, ray r, double ray_tmin, double ray_tmax);
 

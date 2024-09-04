@@ -38,6 +38,19 @@ void copy_box(aabb *box, aabb to_copy){
     box->z[1] = to_copy.z[1];
 }
 
+int longest_axis(aabb box){
+    double x_size, y_size, z_size;
+    x_size = box.x[1] - box.x[0];
+    y_size = box.y[1] - box.y[0];
+    z_size = box.z[1] - box.z[0];
+
+    if(x_size > y_size){
+        return (x_size > z_size) ? 0 : 2;
+    } else {
+        return (y_size > z_size) ? 1 : 2;
+    }
+}
+
 bool hit_box(void *box, ray r, double ray_tmin, double ray_tmax){
     double t0 = (((aabb*)box)->x[0] - r.orig.e[x]) * (1.0 / r.dir.e[x]);
     double t1 = (((aabb*)box)->x[1] - r.orig.e[x]) * (1.0 / r.dir.e[x]);

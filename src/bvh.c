@@ -21,7 +21,7 @@ bool hit_bvh(void *b, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
 }
 
 void bvh_setup(bvh_node *b, hittable_list *l, int start, int end){
-    int axis = rand() % 3;    
+    int axis = longest_axis(b->bbox);
 
     int span = end - start;
     if(span == 1) {
