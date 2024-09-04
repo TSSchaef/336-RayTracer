@@ -1,8 +1,23 @@
 #include "sphere.h"
 
+aabb get_sphere_box(void *s){
+    return ((sphere*)s)->bbox;
+}
+
 void init_sphere(sphere *s, point3 center, double radius, material m){
     copy(&(s->center), center);
     s->radius = (radius > 0) ? radius : 0;
+
+    vector3 rvec, corner1, corner2;
+    init(&rvec, radius, radius, radius);
+    copy(&corner1, center);
+    add_vector(&corner1, rvec);
+    copy(&corner2, center);
+    invert(&rvec);
+    add_vector(&corner2, rvec);
+
+    init_aabb_points(&(s->bbox), corner1, corner2);
+
     copy_material(&(s->mat), m);
 }
 

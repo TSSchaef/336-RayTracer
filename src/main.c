@@ -5,11 +5,12 @@
 #include "material.h"
 #include "hittable_list.h"
 #include "sphere.h"
-
-
+#include "bvh.h"
 
 int main(int argc, char *argv[]){
     hittable_list world;
+
+    init_list(&world);
 
     //initializing world
     /*double R = cos(PI/4);
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]){
     init_lambertian(&m1, c1);
     init_sphere(&s1, center1, 0.5, m1);
     
-    init_list(&world, &s1, &hit_sphere);
+    add_list(&world, &s1, &hit_sphere, &get_sphere_box);
 
     point3 center2;
     init(&center2, 0, -100.5, -1);
@@ -55,7 +56,7 @@ int main(int argc, char *argv[]){
     init_lambertian(&m2, c2);
     init_sphere(&s2, center2, 100, m2);
 
-    add_list(&world, &s2, &hit_sphere);
+    add_list(&world, &s2, &hit_sphere, &get_sphere_box);
 
     point3 center3;
     init(&center3, -1, 0, -1);
@@ -64,7 +65,7 @@ int main(int argc, char *argv[]){
     init_dielectric(&m3, 1.00/1.33);
     init_sphere(&s3, center3, 0.5, m3);
 
-    add_list(&world, &s3, &hit_sphere);
+    add_list(&world, &s3, &hit_sphere, &get_sphere_box);
 
     point3 center4;
     init(&center4, 1, 0, -1);
@@ -72,25 +73,33 @@ int main(int argc, char *argv[]){
     color c4;
     init(&c4, 0.8, 0.6, 0.2);
     material m4;
-    init_metal(&m4, c4, 1.0);
+    init_metal(&m4, c4, 0);
     init_sphere(&s4, center4, 0.5, m4);
 
-    add_list(&world, &s4, &hit_sphere); 
+    add_list(&world, &s4, &hit_sphere, &get_sphere_box); 
+
+
+    bvh_node root;
+    init_bvh(&root, &world);
+
+    delete_list(&world);
+    init_list(&world);
+    add_list(&world, &root, &hit_bvh, &get_bvh_box);
 
     //initializing camera
     camera cam;
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 500;
     cam.max_depth = 50;
-    cam.vfov = 20;
+    cam.vfov = 90;
     
     point3 f, a, v;
-    init(&f, -2, 2, 1);
+    init(&f, 0, 0, 0);
     init(&a, 0, 0, -1);
     init(&v, 0, 1, 0);
 
-    cam.defocus_angle = 10.0;
+    cam.defocus_angle = 0;
     cam.focus_dist = 3.4;
 
     copy(&(cam.lookfrom), f);
@@ -99,6 +108,7 @@ int main(int argc, char *argv[]){
     
     render(&cam, &world);
 
+    delete_bvh(&root);
     delete_list(&world); 
 
     return 0;
