@@ -90,7 +90,7 @@ int main(int argc, char *argv[]){
     camera cam;
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 10;//500;
+    cam.samples_per_pixel = 500;
     cam.max_depth = 50;
     cam.vfov = 90;
     

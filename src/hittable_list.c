@@ -41,8 +41,39 @@ hittable_node *index_list(hittable_list *l, int i){
     return l->list[i];
 }
 
+bool box_compare(aabb a, aabb b, int axis){
+    if(axis == 0){
+        return a.x[0] < b.x[0];
+    } else if(axis == 1){
+        return a.y[0] < b.y[0];
+    } else {
+        return a.z[0] < b.z[0];
+    }
+}
+
+void swap(void *a, void *b){
+    void *temp = a;
+    a = b;
+    b = temp;
+}
+
 void sort_list(hittable_list *l, int start, int end, int axis){
-    
+   int i, j, min_idx;
+
+   for(i = start; i < end - 1; i++){
+        
+       min_idx = i;
+       for(j = i + 1; j < end; j++){
+            if(box_compare((*l->list[i]->get_box)(l->list[i]->hittable), 
+                       (*l->list[j]->get_box)(l->list[j]->hittable), axis)){
+                min_idx = j;
+            }
+       }
+
+       if(min_idx != i){
+            swap(l->list[i], l->list[min_idx]);
+       }
+   }
 }
 
 bool hit(hittable_list *l, ray r, double ray_tmin, 
