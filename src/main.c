@@ -78,13 +78,37 @@ int main(int argc, char *argv[]){
 
     add_list(&world, &s4, &hit_sphere, &get_sphere_box); 
 
+    point3 center5;
+    init(&center5, -2.2, -0.4, -2);
+    sphere s5;
+    color c5;
+    init(&c5, 0.8, 0, 0.8);
+    material m5;
+    init_lambertian(&m5, c5);
+    init_sphere(&s5, center5, 0.1, m5);
 
+    add_list(&world, &s5, &hit_sphere, &get_sphere_box); 
+
+    point3 center6;
+    init(&center6, -2, -0.4, -2);
+    sphere s6;
+    color c6;
+    init(&c6, 0.2, 0.2, 0.2);
+    material m6;
+    init_metal(&m6, c6, 0.1);
+    init_sphere(&s6, center6, 0.1, m6);
+
+    add_list(&world, &s6, &hit_sphere, &get_sphere_box); 
+
+    bool using_BVH = world.size > 10;
     bvh_node root;
-    init_bvh(&root, &world);
+    if(using_BVH){
+        init_bvh(&root, &world);
 
-    delete_list(&world);
-    init_list(&world);
-    add_list(&world, &root, &hit_bvh, &get_bvh_box);
+        delete_list(&world);
+        init_list(&world);
+        add_list(&world, &root, &hit_bvh, &get_bvh_box);
+    }
 
     //initializing camera
     camera cam;
@@ -108,7 +132,7 @@ int main(int argc, char *argv[]){
     
     render(&cam, &world);
 
-    delete_bvh(&root);
+    if(using_BVH) delete_bvh(&root);
     delete_list(&world); 
 
     return 0;
