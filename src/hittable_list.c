@@ -1,57 +1,44 @@
 #include "hittable_list.h"
 
 void init_list(hittable_list *l){
-    l->head = NULL;
     l->size = 0;
+    l->max_size = 10;
 }
 
 void add_list(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get){
-    hittable_node *currNode = l->head;
-
-    if(!currNode){
-        currNode = (hittable_node*) malloc(sizeof(hittable_node));
-        currNode->hittable = h;
-        currNode->is_hit = f;
-        currNode->next = NULL;
-        copy_box(&(l->box), (*get)(h) );
-        currNode->get_box = get;
-        l->size++;
-        l->head = currNode;
-        return;
+    if(l->size == l->max_size){
+        l->max_size *= 2;
+        hittable_node *temp[l->max_size];
+        int i;
+        for(i = 0; i < l->size; i++){
+            temp[i] = l->list[i];
+        }
+        *(l->list) = *temp;
     }
-
-    while(currNode->next != NULL){
-       currNode = currNode->next; 
-    }
-    currNode->next = (hittable_node*) malloc(sizeof(hittable_node));
-    currNode = currNode->next;
+    hittable_node *currNode = (hittable_node *) malloc(sizeof(hittable_node));
     currNode->hittable = h;
     currNode->is_hit = f;
-    currNode->next = NULL;
-    add_boxes(&(l->box), (*get)(h) );
+    if(l->size == 0){
+        copy_box(&(l->box), (*get)(h) );
+    } else {
+        add_boxes(&(l->box), (*get)(h) );
+    }
     currNode->get_box = get;
+    l->list[l->size] = currNode;
     l->size++;
 }
 
 void delete_list(hittable_list *l){
-    hittable_node *currNode;
-    while(l->head != NULL){
-        currNode = l->head;
-        l->head = currNode->next;
-        free(currNode);
+    while(l->size > 0){
+        l->size--;
+        free(l->list[l->size]);
     }
     l->size = 0;
 }
 
 hittable_node *index_list(hittable_list *l, int i){
-    int n = 0;
-    hittable_node *curr = l->head;
-    while(n < i){
-        if(!curr) return NULL;
-        curr = curr->next;
-        n++;
-    }
-    return curr;
+    if(i >= l->size) return NULL;
+    return l->list[i];
 }
 
 void sort_list(hittable_list *l, int start, int end, int axis){
@@ -64,15 +51,16 @@ bool hit(hittable_list *l, ray r, double ray_tmin,
     bool hit_anything = false;
     double closest_so_far = ray_tmax;
 
-    hittable_node *currNode = l->head;
-    while(currNode){
+    int i;
+    hittable_node *currNode;
+    for(i = 0; i < l->size; i++){
+        currNode = l->list[i];
         if((*(currNode->is_hit))(currNode->hittable, r, ray_tmin, closest_so_far,
                     &temp_rec)) {
             hit_anything = true;
             closest_so_far = temp_rec.t;
             copy_hit_record(rec, temp_rec);
         }
-        currNode = currNode->next;
     }
     return hit_anything;
 }
