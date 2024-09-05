@@ -44,7 +44,7 @@ void initialize(camera *c){
     c->pixel_samples_scale = 1.0 / c->samples_per_pixel;
     c->image_height = (int) c->image_width / c->aspect_ratio; 
     c->image_height = (c->image_height < 1) ? 1 : c->image_height;
-    c->focus_dist = (c->focus_dist >= 0) ? c->focus_dist : 10;
+    c->focus_dist = (c->focus_dist >= 0) ? c->focus_dist : 1;
 
     copy(&(c->center), c->lookfrom);
 
