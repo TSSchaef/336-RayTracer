@@ -21,6 +21,14 @@ void init_sphere(sphere *s, point3 center, double radius, material m){
     copy_material(&(s->mat), m);
 }
 
+static void get_sphere_uv(point3 p, double *u, double *v){
+    double theta = acos(-1 * p.e[y]);
+    double phi = atan2(-1 * p.e[z], p.e[x]) + PI;
+
+    *u = phi / (2 * PI);
+    *v = theta / PI;
+}
+
 bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     vector3 oc;
     
@@ -51,8 +59,6 @@ bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *re
 
     //placing information about ray collision into hit record
     rec->t = root;
-    rec->u = 0;
-    rec->v = 0;
     rec->p = at(r, root);
     copy_material(&(rec->mat), ((sphere*)s)->mat);
     vector3 outward_normal;
@@ -61,6 +67,7 @@ bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *re
     add_vector(&(outward_normal), rec->p);
     scale(&(outward_normal), 1.0 / ((sphere*)s)->radius);
     set_face_normal(rec, r, outward_normal);
+    get_sphere_uv(outward_normal, &(rec->u), &(rec->v));
 
     return true;
 }

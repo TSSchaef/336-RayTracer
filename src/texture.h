@@ -2,6 +2,7 @@
 #define TEXTURE_H
 
 #include "util.h"
+#include "image.h"
 
 struct texture;
 typedef color (*get_txt_value)(struct texture *, double, double, point3);
