@@ -47,7 +47,7 @@ void init_lambertian(material *m, color a){
     m->fuzz = 0;
     m->scatter_func = &lambertian_scatter;
     texture t;
-    init_solid_txt(&t, a);
+    init_solid_tex(&t, a);
     copy_texture(&(m->tex), t);
 }
 
@@ -80,7 +80,7 @@ void init_metal(material *m, color a, double f){
     m->fuzz = (f < 1 && f >= 0) ? f : 1;
     m->scatter_func = &metal_scatter;
     texture t;
-    init_solid_txt_rgb(&t, 0, 0, 0);
+    init_solid_tex_rgb(&t, 0, 0, 0);
     copy_texture(&(m->tex), t);
 }
 
@@ -126,6 +126,6 @@ void init_dielectric(material *m, double f){
     m->fuzz = f; 
     m->scatter_func = &dielectric_scatter;
     texture t;
-    init_solid_txt_rgb(&t, 0, 0, 0);
+    init_solid_tex_rgb(&t, 0, 0, 0);
     copy_texture(&(m->tex), t);
 }

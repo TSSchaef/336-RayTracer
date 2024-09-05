@@ -29,7 +29,7 @@ void orig_scene() {
     color texc1, texc2;
     init(&texc1, 0.2, 0.3, 0.1);
     init(&texc2, 0.9, 0.9, 0.9);
-    init_checker_txt(&t2, 0.32, texc1, texc2); 
+    init_checker_tex(&t2, 0.32, texc1, texc2); 
     init(&center2, 0, -100.5, -1);
     sphere s2;
     material m2;
@@ -116,6 +116,10 @@ void orig_scene() {
     render(&cam, &world);
 
     if(using_BVH) delete_bvh(&root);
+
+    delete_texture(&(((checker*)t2.pattern)->even));
+    delete_texture(&(((checker*)t2.pattern)->odd));
+    delete_texture(&t2);
     delete_list(&world); 
 }
 
@@ -127,7 +131,7 @@ void checkered_spheres(){
     color texc1, texc2;
     init(&texc1, 0.2, 0.3, 0.1);
     init(&texc2, 0.9, 0.9, 0.9);
-    init_checker_txt(&t2, 0.32, texc1, texc2); 
+    init_checker_tex(&t2, 0.32, texc1, texc2); 
 
     point3 center1;
     init(&center1, 0, -10, 0);
@@ -151,7 +155,7 @@ void checkered_spheres(){
     camera cam;
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 5;//100;
     cam.max_depth = 50;
     cam.vfov = 20;
     
@@ -167,7 +171,10 @@ void checkered_spheres(){
     cam.focus_dist = 3.4;
 
     render(&cam, &world);
-
+    
+    delete_texture(&(((checker*)t2.pattern)->even));
+    delete_texture(&(((checker*)t2.pattern)->odd));
+    delete_texture(&t2);
     delete_list(&world); 
 }
 
