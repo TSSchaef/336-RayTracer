@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "util.h"
 #include "material.h"
+#include "texture.h"
 #include "hittable_list.h"
 #include "sphere.h"
 #include "bvh.h"
@@ -48,12 +49,18 @@ int main(int argc, char *argv[]){
     add_list(&world, &s1, &hit_sphere, &get_sphere_box);
 
     point3 center2;
+    texture t2;
+    color texc1, texc2;
+    init(&texc1, 0.2, 0.3, 0.1);
+    init(&texc2, 0.9, 0.9, 0.9);
+    init_checker_txt(&t2, 0.32, texc1, texc2); 
     init(&center2, 0, -100.5, -1);
     sphere s2;
-    color c2;
-    init(&c2, 0.8, 0.8, 0);
     material m2;
-    init_lambertian(&m2, c2);
+    init_lambertian_tex(&m2, t2);
+    //color c2;
+    //init(&c2, 0.9, 0.2, 0.5);
+    //init_lambertian(&m2, c2);
     init_sphere(&s2, center2, 100, m2);
 
     add_list(&world, &s2, &hit_sphere, &get_sphere_box);

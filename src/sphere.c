@@ -10,11 +10,11 @@ void init_sphere(sphere *s, point3 center, double radius, material m){
 
     vector3 rvec, corner1, corner2;
     init(&rvec, radius, radius, radius);
-    copy(&corner1, center);
-    add_vector(&corner1, rvec);
     copy(&corner2, center);
-    invert(&rvec);
     add_vector(&corner2, rvec);
+    copy(&corner1, center);
+    invert(&rvec);
+    add_vector(&corner1, rvec);
 
     init_aabb_points(&(s->bbox), corner1, corner2);
 
@@ -51,6 +51,8 @@ bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *re
 
     //placing information about ray collision into hit record
     rec->t = root;
+    rec->u = 0;
+    rec->v = 0;
     rec->p = at(r, root);
     copy_material(&(rec->mat), ((sphere*)s)->mat);
     vector3 outward_normal;

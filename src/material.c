@@ -12,6 +12,8 @@ void copy_hit_record(hit_record *h, hit_record to_copy){
     copy(&(h->p), to_copy.p);
     copy(&(h->normal), to_copy.normal);
     h->t = to_copy.t;
+    h->u = to_copy.u;
+    h->v = to_copy.v;
     h->front_face = to_copy.front_face;
     copy_material(&(h->mat), to_copy.mat);
 }
@@ -20,6 +22,7 @@ void copy_material(material *m, material to_copy){
     copy(&(m->albedo), to_copy.albedo);
     m->fuzz = to_copy.fuzz;
     m->scatter_func = to_copy.scatter_func;
+    copy_texture(&(m->tex), to_copy.tex);
 }
 
 bool lambertian_scatter(ray ray_in, 
@@ -35,7 +38,7 @@ bool lambertian_scatter(ray ray_in,
     ray r;
     init_ray(&r, rec->p, dir);
     copy_ray(ray_out, r);
-    copy(attenuation, rec->mat.albedo);
+    copy(attenuation, (*(rec->mat.tex.value))(&(rec->mat.tex), rec->u, rec->v, rec->p));
     return true;
 }
 
@@ -43,6 +46,16 @@ void init_lambertian(material *m, color a){
     copy(&(m->albedo), a);
     m->fuzz = 0;
     m->scatter_func = &lambertian_scatter;
+    texture t;
+    init_solid_txt(&t, a);
+    copy_texture(&(m->tex), t);
+}
+
+void init_lambertian_tex(material *m, texture t){
+    init(&(m->albedo), 0, 0, 0);
+    m->fuzz = 0;
+    m->scatter_func = &lambertian_scatter;
+    copy_texture(&(m->tex), t);
 }
 
 bool metal_scatter(ray ray_in, 
@@ -66,6 +79,9 @@ void init_metal(material *m, color a, double f){
     copy(&(m->albedo), a);
     m->fuzz = (f < 1 && f >= 0) ? f : 1;
     m->scatter_func = &metal_scatter;
+    texture t;
+    init_solid_txt_rgb(&t, 0, 0, 0);
+    copy_texture(&(m->tex), t);
 }
 
 double reflectance(double cosine, double refraction_index) {
@@ -109,4 +125,7 @@ void init_dielectric(material *m, double f){
     init(&(m->albedo), 1.0, 1.0, 1.0);
     m->fuzz = f; 
     m->scatter_func = &dielectric_scatter;
+    texture t;
+    init_solid_txt_rgb(&t, 0, 0, 0);
+    copy_texture(&(m->tex), t);
 }

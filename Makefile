@@ -1,7 +1,7 @@
 #Makefile
 
-ray-tracer: main.o vector3.o ray.o sphere.o material.o hittable_list.o camera.o aabb.o bvh.o
-	gcc main.o vector3.o ray.o sphere.o material.o hittable_list.o camera.o aabb.o bvh.o -o ray-tracer -lm
+ray-tracer: main.o vector3.o ray.o sphere.o material.o hittable_list.o camera.o aabb.o bvh.o texture.o
+	gcc main.o vector3.o ray.o sphere.o material.o hittable_list.o camera.o aabb.o bvh.o texture.o -o ray-tracer -lm
 
 main.o: src/main.c src/vector3.h
 	gcc -Wall -Werror -g src/main.c -c
@@ -29,6 +29,9 @@ aabb.o: src/aabb.h src/aabb.c
 
 bvh.o: src/bvh.h src/bvh.c
 	gcc -Wall -Werror -g src/bvh.c -c
+
+texture.o: src/texture.h src/texture.c
+	gcc -Wall -Werror -g src/texture.c -c
 
 #Second way to build the program with debugging disabled
 
