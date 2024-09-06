@@ -178,10 +178,52 @@ void checkered_spheres(){
     delete_list(&world); 
 }
 
+void earth(){
+    hittable_list world;
+    init_list(&world);
+
+    texture earth_tex;
+    init_image_tex(&earth_tex, "earthmap.jpg");
+
+    point3 center1;
+    init(&center1, 0, 0, 0);
+    sphere s1;
+    material m1;
+    init_lambertian_tex(&m1, earth_tex);
+    init_sphere(&s1, center1, 2, m1);
+    
+    add_list(&world, &s1, &hit_sphere, &get_sphere_box);
+
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
+    cam.vfov = 20;
+    
+    point3 f, a, v;
+    init(&f, 0, 0, 12);
+    init(&a, 0, 0, 0);
+    init(&v, 0, 1, 0);
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world);
+    
+    delete_texture(&earth_tex);
+    delete_list(&world); 
+}
+
 int main(int argc, char *argv[]){
-    switch(2){
+    switch(3){
         case 1: orig_scene(); break;
         case 2: checkered_spheres(); break;
+        case 3: earth(); break;
     }   
     return 0;
 }

@@ -22,6 +22,9 @@ typedef struct {
     double inv_scale;
 } checker;
 
+typedef struct {
+    image img;
+} image_tex;
 
 void copy_texture(texture *t, texture to_copy);
 
@@ -32,6 +35,11 @@ void init_solid_tex_rgb(texture *t, double r, double g, double b);
 color checker_value(texture *t, double u, double v, point3 p);
 void init_checker(texture *t, double scale, texture t1, texture t2);
 void init_checker_tex(texture *t, double scale, color even, color odd);
+
+void init_image_tex(texture *t, const char *filename);
+color image_value(texture *t, double u, double v, point3 p);
+
+void delete_image_tex(texture *t);
 
 void delete_texture(texture *t);
 

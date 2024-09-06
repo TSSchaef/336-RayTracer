@@ -75,3 +75,42 @@ void init_checker_tex(texture *t, double scale, color even, color odd){
     t->pattern = c;
     t->value = &checker_value;
 }
+
+void delete_image_tex(texture *t);
+
+static double clamp(double x, double low, double high){
+    if(x < low) return low;
+    if(x < high) return x;
+    return high;
+}
+
+color image_value(texture *t, double u, double v, point3 p){
+    image *i = &(((image_tex *)t->pattern)->img);
+    
+    if(i->image_height <= 0){
+        color c;
+        init(&c, 0, 1, 1);
+        return c;
+    }
+
+    u = clamp(u, 0, 1);
+    v = 1.0 - clamp(v, 0, 1);
+
+    int k = (int) (u * i->image_width);
+    int j = (int) (v * i->image_height);
+    const unsigned char *pixel = pixel_data(i, k, j);
+
+    double color_scale = 1.0 / 255.0;
+    
+    color c;
+    init(&c, color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
+    return c;
+}
+
+void init_image_tex(texture *t, const char *filename){
+    image_tex *i = malloc(sizeof(image_tex));
+    load_image(&(i->img), filename);
+    
+    t->pattern = i;
+    t->value = &image_value;
+}
