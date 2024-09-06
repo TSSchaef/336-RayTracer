@@ -198,7 +198,7 @@ void earth(){
     camera cam;
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 5;//100;
     cam.max_depth = 50;
     cam.vfov = 20;
     
@@ -215,7 +215,7 @@ void earth(){
 
     render(&cam, &world);
     
-    delete_texture(&earth_tex);
+    delete_image_tex(&earth_tex);
     delete_list(&world); 
 }
 

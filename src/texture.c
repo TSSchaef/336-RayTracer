@@ -76,7 +76,10 @@ void init_checker_tex(texture *t, double scale, color even, color odd){
     t->value = &checker_value;
 }
 
-void delete_image_tex(texture *t);
+void delete_image_tex(texture *t){
+   delete_image(&((image_tex *)t->pattern)->img);
+   free(t->pattern);
+}
 
 static double clamp(double x, double low, double high){
     if(x < low) return low;
