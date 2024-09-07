@@ -4,6 +4,8 @@
 #include "util.h"
 #include "image.h"
 
+#define POINT_COUNT 256
+
 struct texture;
 typedef color (*get_tex_value)(struct texture *, double, double, point3);
 
@@ -26,6 +28,14 @@ typedef struct {
     image img;
 } image_tex;
 
+typedef struct {
+    vector3 randvec[POINT_COUNT];
+    int perm_x[POINT_COUNT];
+    int perm_y[POINT_COUNT];
+    int perm_z[POINT_COUNT];
+    double scale;
+} perlin;
+
 void copy_texture(texture *t, texture to_copy);
 
 color solid_value(texture *t, double u, double v, point3 p);
@@ -38,6 +48,9 @@ void init_checker_tex(texture *t, double scale, color even, color odd);
 
 void init_image_tex(texture *t, const char *filename);
 color image_value(texture *t, double u, double v, point3 p);
+
+void init_perlin_tex(texture *t, double scale);
+color perlin_value(texture *t, double u, double v, point3 p);
 
 void delete_image_tex(texture *t);
 

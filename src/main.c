@@ -219,11 +219,60 @@ void earth(){
     delete_list(&world); 
 }
 
+void perlin_spheres(){
+    hittable_list world;
+    init_list(&world);
+
+    texture p_tex;
+    init_perlin_tex(&p_tex, 4);
+
+    point3 center1;
+    init(&center1, 0, -1000, 0);
+    sphere s1;
+    material m1;
+    init_lambertian_tex(&m1, p_tex);
+    init_sphere(&s1, center1, 1000, m1);
+    
+    add_list(&world, &s1, &hit_sphere, &get_sphere_box);
+
+    point3 center2;
+    init(&center2, 0, 2, 0);
+    sphere s2;
+    init_sphere(&s2, center2, 2, m1);
+    
+    add_list(&world, &s2, &hit_sphere, &get_sphere_box);
+
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
+    cam.vfov = 20;
+    
+    point3 f, a, v;
+    init(&f, 13, 2, 3);
+    init(&a, 0, 0, 0);
+    init(&v, 0, 1, 0);
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world);
+    
+    delete_texture(&p_tex);
+    delete_list(&world); 
+}
+
 int main(int argc, char *argv[]){
-    switch(3){
+    switch(4){
         case 1: orig_scene(); break;
         case 2: checkered_spheres(); break;
         case 3: earth(); break;
+        case 4: perlin_spheres(); break;
     }   
     return 0;
 }
