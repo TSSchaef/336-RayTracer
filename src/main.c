@@ -1,12 +1,11 @@
-#include <stdio.h>
 
 #include "camera.h"
-#include "util.h"
 #include "material.h"
 #include "texture.h"
 #include "hittable_list.h"
 #include "sphere.h"
 #include "bvh.h"
+#include "quad.h"
 
 
 void orig_scene() {
@@ -267,12 +266,93 @@ void perlin_spheres(){
     delete_list(&world); 
 }
 
+void quads(){
+    hittable_list world;
+    init_list(&world);
+    
+    color red, green, blue, orange, teal;
+    init(&red, 1.0, 0.2, 0.2);
+    init(&green, 0.2, 1.0, 0.2);
+    init(&blue, 0.2, 0.2, 1.0);
+    init(&orange, 1.0, 0.5, 0);
+    init(&teal, 0.2, 0.8, 0.8);
+
+    material left_red, back_green, right_blue, upper_orange, lower_teal;
+
+    init_lambertian(&left_red, red);
+    init_lambertian(&back_green, green);
+    init_lambertian(&right_blue, blue);
+    init_lambertian(&upper_orange, orange);
+    init_lambertian(&lower_teal, teal);
+
+    quad left, back, right, upper, lower;
+    
+    point3 leftQ, backQ, rightQ, upperQ, lowerQ;
+    vector3 leftu, leftv, backu, backv, rightu, rightv, upperu, upperv, loweru, lowerv;
+    
+    init(&leftQ, -3, -2, 5);
+    init(&leftu, 0, 0, -4);
+    init(&leftv, 0, 4, 0);
+
+    init(&backQ, -2, -2, 0);
+    init(&backu, 4, 0, 0);
+    init(&backv, 0, 4, 0);
+
+    init(&rightQ, 3, -2, 1);
+    init(&rightu, 0, 0, 4);
+    init(&rightv, 0, 4, 0);
+
+    init(&upperQ, -2, 3, 1);
+    init(&upperu, 4, 0, 0);
+    init(&upperv, 0, 0, 4);
+
+    init(&lowerQ, -2, -3, 5);
+    init(&loweru, 4, 0, 0);
+    init(&lowerv, 0, 0, -4);
+
+    init_quad(&left,  leftQ,  leftu,  leftv, left_red);
+    init_quad(&right,  rightQ,  rightu,  rightv, right_blue);
+    init_quad(&back,  backQ,  backu,  backv, back_green);
+    init_quad(&upper,  upperQ,  upperu,  upperv, upper_orange);
+    init_quad(&lower,  lowerQ,  loweru,  lowerv, lower_teal);
+
+    add_list(&world, &left, &hit_quad, &get_quad_box);
+    add_list(&world, &right, &hit_quad, &get_quad_box);
+    add_list(&world, &back, &hit_quad, &get_quad_box);
+    add_list(&world, &upper, &hit_quad, &get_quad_box);
+    add_list(&world, &lower, &hit_quad, &get_quad_box);
+
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
+    cam.vfov = 80;
+    
+    point3 f, a, v;
+    init(&f, 0, 0, 9);
+    init(&a, 0, 0, 0);
+    init(&v, 0, 1, 0);
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world);
+    
+    delete_list(&world); 
+}
+
 int main(int argc, char *argv[]){
-    switch(4){
+    switch(5){
         case 1: orig_scene(); break;
         case 2: checkered_spheres(); break;
         case 3: earth(); break;
         case 4: perlin_spheres(); break;
+        case 5: quads(); break;
     }   
     return 0;
 }
