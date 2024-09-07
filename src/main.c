@@ -96,7 +96,7 @@ void orig_scene() {
     camera cam;
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 500;
+    cam.samples_per_pixel = 5;//500;
     cam.max_depth = 50;
     init(&(cam.background), 0.7, 0.8, 1.0);
     cam.vfov = 90;
@@ -120,6 +120,11 @@ void orig_scene() {
     delete_texture(&(((checker*)t2.pattern)->even));
     delete_texture(&(((checker*)t2.pattern)->odd));
     delete_texture(&t2);
+    delete_texture(&(m1.tex));
+    delete_texture(&(m3.tex));
+    delete_texture(&(m4.tex));
+    delete_texture(&(m5.tex));
+    delete_texture(&(m6.tex));
     delete_list(&world); 
 }
 
@@ -330,7 +335,7 @@ void quads(){
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 5;//100;
     init(&(cam.background), 0.7, 0.8, 1.0);
     cam.max_depth = 50;
     cam.vfov = 80;
@@ -348,6 +353,11 @@ void quads(){
 
     render(&cam, &world);
     
+    delete_texture(&(left_red.tex));
+    delete_texture(&(back_green.tex));
+    delete_texture(&(right_blue.tex));
+    delete_texture(&(upper_orange.tex));
+    delete_texture(&(lower_teal.tex));
     delete_list(&world); 
 }
 
@@ -392,7 +402,7 @@ void simple_light(){
     camera cam;
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 5;//100;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 20;
@@ -410,17 +420,106 @@ void simple_light(){
 
     render(&cam, &world);
     
+    delete_texture(&perl_tex);
+    delete_texture(&(dif_light.tex));
+    delete_list(&world); 
+}
+
+void cornell_box(){
+    hittable_list world;
+    init_list(&world);
+    
+    color r, w, g, l;
+    init(&l, 15.0, 15.0, 15.0);
+    init(&w, 0.73, 0.73, 0.73);
+    init(&r, 0.65, 0.05, 0.05);
+    init(&g, 0.12, 0.45, 0.15);
+
+    material dif_light, red, white, green;
+
+    init_lambertian(&red, r);
+    init_lambertian(&white, w);
+    init_lambertian(&green, g);
+    init_diffuse_light(&dif_light, l);
+
+    quad q1, q2, q3, q4, q5, q6;
+    point3 q1Q, q2Q, q3Q, q4Q, q5Q, q6Q;
+    vector3 q1u, q2u, q3u, q4u, q5u, q6u;
+    vector3 q1v, q2v, q3v, q4v, q5v, q6v;
+    
+    init(&q1Q, 555, 0, 0);
+    init(&q2Q, 0, 0, 0);
+    init(&q3Q, 343, 554, 332);
+    init(&q4Q, 0, 0, 0);
+    init(&q5Q, 555, 555, 555);
+    init(&q6Q, 0, 0, 555);
+
+    init(&q1u, 0, 555, 0);
+    init(&q2u, 0, 555, 0);
+    init(&q3u, -130, 0, 0);
+    init(&q4u, 555, 0, 0);
+    init(&q5u, -555, 0, 0);
+    init(&q6u, 555, 0, 0);
+
+    init(&q1v, 0, 0, 555);
+    init(&q2v, 0, 0, 555);
+    init(&q3v, 0, 0, -105);
+    init(&q4v, 0, 0, 555);
+    init(&q5v, 0, 0, -555);
+    init(&q6v, 0, 555, 0);
+
+    init_quad(&q1, q1Q, q1u, q1v, green);
+    init_quad(&q2, q2Q, q2u, q2v, red);
+    init_quad(&q3, q3Q, q3u, q3v, dif_light);
+    init_quad(&q4, q4Q, q4u, q4v, white);
+    init_quad(&q5, q5Q, q5u, q5v, white);
+    init_quad(&q6, q6Q, q6u, q6v, white);
+
+    add_list(&world, &q1, &hit_quad, &get_quad_box);
+    add_list(&world, &q2, &hit_quad, &get_quad_box);
+    add_list(&world, &q3, &hit_quad, &get_quad_box);
+    add_list(&world, &q4, &hit_quad, &get_quad_box);
+    add_list(&world, &q5, &hit_quad, &get_quad_box);
+    add_list(&world, &q6, &hit_quad, &get_quad_box);
+    
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 600;
+    cam.samples_per_pixel = 10;//200;
+    init(&(cam.background), 0, 0, 0);
+    cam.max_depth = 50;
+    cam.vfov = 40;
+    
+    point3 f, a, v;
+    init(&f, 278, 278, -800);
+    init(&a, 278, 278, 0);
+    init(&v, 0, 1, 0);
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world);
+    
+    delete_texture(&(red.tex));
+    delete_texture(&(white.tex));
+    delete_texture(&(green.tex));
+    delete_texture(&(dif_light.tex));
     delete_list(&world); 
 }
 
 int main(int argc, char *argv[]){
-    switch(6){
+    switch(7){
         case 1: orig_scene(); break;
         case 2: checkered_spheres(); break;
         case 3: earth(); break;
         case 4: perlin_spheres(); break;
         case 5: quads(); break;
         case 6: simple_light(); break;
+        case 7: cornell_box(); break;
     }   
     return 0;
 }
