@@ -1,3 +1,6 @@
 ext/*
 img/*
+*.o
+*.d
 setup.sh
+image.ppm

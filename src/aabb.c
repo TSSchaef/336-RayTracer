@@ -1,5 +1,21 @@
 #include "aabb.h"
 
+static void pad_mins(aabb *box){
+   double delta = 0.001;
+   if(box->x[1] - box->x[0] < delta){
+        box->x[1] += delta / 2;
+        box->x[0] -= delta / 2;
+   }
+   if(box->y[1] - box->y[0] < delta){
+        box->y[1] += delta / 2;
+        box->y[0] -= delta / 2;
+   }
+   if(box->z[1] - box->z[0] < delta){
+        box->z[1] += delta / 2;
+        box->z[0] -= delta / 2;
+   }
+}
+
 void init_aabb(aabb *box, double x0, double x1, double y0, double y1,
                 double z0, double z1){
     
@@ -9,6 +25,7 @@ void init_aabb(aabb *box, double x0, double x1, double y0, double y1,
     box->y[1] = y1;
     box->z[0] = z0;
     box->z[1] = z1;
+    pad_mins(box);
 }
 
 void init_aabb_points(aabb *box, point3 a, point3 b){
@@ -18,6 +35,7 @@ void init_aabb_points(aabb *box, point3 a, point3 b){
     box->y[1] = (a.e[1] <= b.e[1]) ? b.e[1] : a.e[1];
     box->z[0] = (a.e[2] <= b.e[2]) ? a.e[2] : b.e[2]; 
     box->z[1] = (a.e[2] <= b.e[2]) ? b.e[2] : a.e[2];  
+    pad_mins(box);
 }
 
 void add_boxes(aabb *box, aabb add){
