@@ -98,6 +98,7 @@ void orig_scene() {
     cam.image_width = 400;
     cam.samples_per_pixel = 500;
     cam.max_depth = 50;
+    init(&(cam.background), 0.7, 0.8, 1.0);
     cam.vfov = 90;
     
     point3 f, a, v;
@@ -156,6 +157,7 @@ void checkered_spheres(){
     cam.image_width = 400;
     cam.samples_per_pixel = 5;//100;
     cam.max_depth = 50;
+    init(&(cam.background), 0.7, 0.8, 1.0);
     cam.vfov = 20;
     
     point3 f, a, v;
@@ -199,6 +201,7 @@ void earth(){
     cam.image_width = 400;
     cam.samples_per_pixel = 5;//100;
     cam.max_depth = 50;
+    init(&(cam.background), 0.7, 0.8, 1.0);
     cam.vfov = 20;
     
     point3 f, a, v;
@@ -247,6 +250,7 @@ void perlin_spheres(){
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
+    init(&(cam.background), 0.7, 0.8, 1.0);
     cam.vfov = 20;
     
     point3 f, a, v;
@@ -327,6 +331,7 @@ void quads(){
     cam.aspect_ratio = 1.0;
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
+    init(&(cam.background), 0.7, 0.8, 1.0);
     cam.max_depth = 50;
     cam.vfov = 80;
     
@@ -346,13 +351,76 @@ void quads(){
     delete_list(&world); 
 }
 
+void simple_light(){
+    hittable_list world;
+    init_list(&world);
+    
+    color light;
+    init(&light, 4.0, 4.0, 4.0);
+
+    material dif_light, perl;
+    texture perl_tex;
+
+    init_perlin_tex(&perl_tex, 4);
+    init_lambertian_tex(&perl, perl_tex);
+    init_diffuse_light(&dif_light, light);
+
+    quad q;
+    sphere s1, s2, s3;
+    point3 center1, center2, center3, Q;
+    vector3 u, vq;
+    
+    init(&Q, 3, 1, -2);
+    init(&u, 2, 0, 0);
+    init(&vq, 0, 2, 0);
+
+    init(&center1, 0, -1000, 0);
+    init(&center2, 0, 2, 0);
+    init(&center3, 0, 7, 0);
+
+    init_quad(&q, Q, u, vq, dif_light);
+    init_sphere(&s1, center1, 1000, perl);
+    init_sphere(&s2, center2, 2, perl);
+    init_sphere(&s3, center3, 2, dif_light);
+
+    add_list(&world, &q, &hit_quad, &get_quad_box);
+    add_list(&world, &s1, &hit_sphere, &get_sphere_box);
+    add_list(&world, &s2, &hit_sphere, &get_sphere_box);
+    add_list(&world, &s3, &hit_sphere, &get_sphere_box);
+    
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    init(&(cam.background), 0, 0, 0);
+    cam.max_depth = 50;
+    cam.vfov = 20;
+    
+    point3 f, a, v;
+    init(&f, 26, 3, 6);
+    init(&a, 0, 2, 0);
+    init(&v, 0, 1, 0);
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world);
+    
+    delete_list(&world); 
+}
+
 int main(int argc, char *argv[]){
-    switch(5){
+    switch(6){
         case 1: orig_scene(); break;
         case 2: checkered_spheres(); break;
         case 3: earth(); break;
         case 4: perlin_spheres(); break;
         case 5: quads(); break;
+        case 6: simple_light(); break;
     }   
     return 0;
 }

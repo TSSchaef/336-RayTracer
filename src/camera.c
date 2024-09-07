@@ -1,6 +1,6 @@
 #include "camera.h"
 
-color ray_color(ray r, int depth, hittable_list *world){
+color ray_color(ray r, int depth, hittable_list *world, color background){
     if(depth <= 0){
         color black;
         init(&black, 0, 0, 0);
@@ -8,31 +8,19 @@ color ray_color(ray r, int depth, hittable_list *world){
     }
 
     hit_record h;
-    if(hit(world, r, 0.001, DBL_MAX, &h)){
-        ray bounce;
-        color attenuation;
 
-        if((*h.mat.scatter_func)(r, &h, &attenuation, &bounce)){
-            return attenuate(attenuation, ray_color(bounce, depth - 1, world));            
-        }
+    if(!hit(world, r, 0.001, DBL_MAX, &h)) return background;
 
-        color black;
-        init(&black, 0, 0, 0);
-        return black;
+    ray bounce;
+    color attenuation;
+    color color_from_emmision = (*(h.mat.emit))(&(h.mat), h.u, h.v, h.p);
+
+    if(!(*h.mat.scatter_func)(r, &h, &attenuation, &bounce)) {
+        return color_from_emmision;
     }
 
-    vector3 unit_direction;
-    copy(&unit_direction, r.dir);
-    unit_vector(&unit_direction);
-
-    double a = 0.5 * (unit_direction.e[y] + 1.0);
-    color white, blue;
-    init(&white, 1.0, 1.0, 1.0);
-    init(&blue, 0.5, 0.7, 1.0);
-    scale(&blue, a);
-    scale(&white, 1.0 - a);
-    add_vector(&white, blue);
-    return white;
+    add_vector(&color_from_emmision, attenuate(attenuation, ray_color(bounce, depth - 1, world, background)));            
+    return color_from_emmision;
 }
 
 void initialize(camera *c){
@@ -154,7 +142,7 @@ void render(camera *c, hittable_list *world){
             int sample;
             for(sample = 0; sample < c->samples_per_pixel; sample++){
                 ray r = get_ray(c, i, j);
-                add_vector(&pixel_color, ray_color(r, c->max_depth, world));
+                add_vector(&pixel_color, ray_color(r, c->max_depth, world, c->background));
             }
             
             scale(&pixel_color, c->pixel_samples_scale);

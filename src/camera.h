@@ -17,6 +17,8 @@ typedef struct {
     double pixel_samples_scale;
     int max_depth;
 
+    color background;
+
     double vfov;
     point3 lookfrom;
     point3 lookat;

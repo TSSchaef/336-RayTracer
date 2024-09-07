@@ -1,5 +1,11 @@
 #include "material.h"
 
+color non_emitting(material *m, double u, double v, point3 p){
+    color black;
+    init(&black, 0, 0, 0);
+    return black;
+}
+
 void set_face_normal(hit_record *h, ray r, vector3 outward_normal){
     h->front_face = dot(r.dir, outward_normal) < 0;
     copy(&(h->normal), outward_normal);
@@ -22,6 +28,7 @@ void copy_material(material *m, material to_copy){
     copy(&(m->albedo), to_copy.albedo);
     m->fuzz = to_copy.fuzz;
     m->scatter_func = to_copy.scatter_func;
+    m->emit = to_copy.emit;
     copy_texture(&(m->tex), to_copy.tex);
 }
 
@@ -46,6 +53,7 @@ void init_lambertian(material *m, color a){
     copy(&(m->albedo), a);
     m->fuzz = 0;
     m->scatter_func = &lambertian_scatter;
+    m->emit = &non_emitting;
     texture t;
     init_solid_tex(&t, a);
     copy_texture(&(m->tex), t);
@@ -55,6 +63,7 @@ void init_lambertian_tex(material *m, texture t){
     init(&(m->albedo), 0, 0, 0);
     m->fuzz = 0;
     m->scatter_func = &lambertian_scatter;
+    m->emit = &non_emitting;
     copy_texture(&(m->tex), t);
 }
 
@@ -79,6 +88,7 @@ void init_metal(material *m, color a, double f){
     copy(&(m->albedo), a);
     m->fuzz = (f < 1 && f >= 0) ? f : 1;
     m->scatter_func = &metal_scatter;
+    m->emit = &non_emitting;
     texture t;
     init_solid_tex_rgb(&t, 0, 0, 0);
     copy_texture(&(m->tex), t);
@@ -125,7 +135,35 @@ void init_dielectric(material *m, double f){
     init(&(m->albedo), 1.0, 1.0, 1.0);
     m->fuzz = f; 
     m->scatter_func = &dielectric_scatter;
+    m->emit = &non_emitting;
     texture t;
     init_solid_tex_rgb(&t, 0, 0, 0);
+    copy_texture(&(m->tex), t);
+}
+
+bool non_scattering(ray ray_in, 
+        struct hit_record *rec, color *attenuation, ray *ray_out){
+    return false;
+}
+
+color emit(material *m, double u, double v, point3 p){
+    return (*(m->tex.value))(&(m->tex), u, v, p);
+}
+
+void init_diffuse_light_tex(material *m, texture *t){
+    init(&(m->albedo), 1.0, 1.0, 1.0);
+    m->fuzz = 0; 
+    m->scatter_func = &non_scattering;
+    m->emit = &emit;
+    copy_texture(&(m->tex), *t);
+}
+
+void init_diffuse_light(material *m, color c){
+    init(&(m->albedo), 1.0, 1.0, 1.0);
+    m->fuzz = 0; 
+    m->scatter_func = &non_scattering;
+    m->emit = &emit;
+    texture t;
+    init_solid_tex(&t, c); 
     copy_texture(&(m->tex), t);
 }

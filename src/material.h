@@ -8,12 +8,15 @@
 
 
 struct hit_record;
+struct material;
 typedef bool (*mat_scatter)(ray, struct hit_record *, color *, ray *);
+typedef color (*emitted)(struct material *, double, double, point3);
 
 typedef struct material {
     color albedo;
     double fuzz;
     texture tex;
+    emitted emit;
     mat_scatter scatter_func;
 } material;
 
@@ -27,6 +30,7 @@ typedef struct hit_record{
     struct material mat;
 } hit_record;
 
+color non_emitting(material *m, double u, double v, point3 p);
 void set_face_normal(hit_record *h, ray r, vector3 outward_normal);
 void copy_hit_record(hit_record *h, hit_record to_copy);
 
@@ -44,5 +48,9 @@ bool metal_scatter(ray ray_in,
 void init_dielectric(material *m, double fuzz);
 bool dielectric_scatter(ray ray_in, 
         struct hit_record *rec, color *attenuation, ray *ray_out);
+
+void init_diffuse_light_tex(material *m, texture *t);
+void init_diffuse_light(material *m, color c);
+color emit(material *m, double u, double v, point3 p);
 
 #endif
