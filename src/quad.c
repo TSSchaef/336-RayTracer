@@ -1,5 +1,6 @@
 #include "quad.h"
 #include "aabb.h"
+#include "hittable_list.h"
 #include "material.h"
 #include "vector3.h"
 
@@ -82,4 +83,65 @@ bool hit_quad(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec)
 
 aabb get_quad_box(void *s){
     return ((quad *)s)->bbox;
+}
+
+
+hittable_list *init_cube(point3 a, point3 b, material mat){
+  hittable_list *sides;
+  sides = (hittable_list *) malloc(sizeof(hittable_list));
+  init_list(sides);
+
+  point3 min, max;
+  init(&min, fmin(a.e[x], b.e[x]), fmin(a.e[y], b.e[y]), fmin(a.e[z], b.e[z]));
+  init(&max, fmax(a.e[x], b.e[x]), fmax(a.e[y], b.e[y]), fmax(a.e[z], b.e[z]));
+
+  vector3 dx, dy, dz, ndz, ndx;
+  init(&dx, max.e[x] - min.e[x], 0, 0);
+  copy(&ndx, dx);
+  invert(&ndx);
+  init(&dy, 0, max.e[y] - min.e[y], 0);
+  init(&dz, 0, 0, max.e[z] - min.e[z]);
+  copy(&ndz, dz);
+  invert(&ndz);
+
+  point3 f, r, ba, l, t, bo;
+  init(&f, min.e[x], min.e[y], max.e[z]);
+  init(&r, max.e[x], min.e[y], max.e[z]);
+  init(&ba, max.e[x], min.e[y], min.e[z]);
+  init(&l, min.e[x], min.e[y], min.e[z]);
+  init(&t, min.e[x], max.e[y], max.e[z]);
+  init(&bo, min.e[x], min.e[y], min.e[z]);
+
+  quad *front, *right, *back, *left, *top, *bottom;
+  front = (quad *) malloc(sizeof(quad));
+  right = (quad *) malloc(sizeof(quad));
+  back = (quad *) malloc(sizeof(quad));
+  left = (quad *) malloc(sizeof(quad));
+  top = (quad *) malloc(sizeof(quad));
+  bottom = (quad *) malloc(sizeof(quad));
+
+  init_quad(front, f, dx, dy, mat);
+  init_quad(right, r, ndz, dy, mat);
+  init_quad(back, ba, ndx, dy, mat);
+  init_quad(left, l, dz, dy, mat);
+  init_quad(top, t, dx, ndz, mat);
+  init_quad(bottom, bo, dx, dz, mat);
+
+  add_list(sides, front, &hit_quad, &get_quad_box);
+  add_list(sides, right, &hit_quad, &get_quad_box);
+  add_list(sides, back, &hit_quad, &get_quad_box);
+  add_list(sides, left, &hit_quad, &get_quad_box);
+  add_list(sides, top, &hit_quad, &get_quad_box);
+  add_list(sides, bottom, &hit_quad, &get_quad_box);
+
+  return sides;
+}
+
+void delete_cube(hittable_list *l){
+    int i;
+    for(i = 0; i < l->size; i++){
+        free((l->list[i])->hittable);
+    }
+    delete_list(l);
+    free(l);
 }

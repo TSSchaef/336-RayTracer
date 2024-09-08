@@ -481,12 +481,32 @@ void cornell_box(){
     add_list(&world, &q4, &hit_quad, &get_quad_box);
     add_list(&world, &q5, &hit_quad, &get_quad_box);
     add_list(&world, &q6, &hit_quad, &get_quad_box);
+
+    point3 p1, p2, p3, p4;
+    init(&p1, 130, 0, 65);
+    init(&p2, 295, 165, 230);
+    init(&p3, 265, 0, 295);
+    init(&p4, 430, 330, 460);
+    
+    hittable_list *cube1, *cube2;
+    cube1 = init_cube(p1, p2, white);
+    cube2 = init_cube(p3, p4, white);
+
+    add_list(&world, cube1, &hit, &get_list_box);
+    add_list(&world, cube2, &hit, &get_list_box);
+    
+    bvh_node root;
+    init_bvh(&root, &world);
+
+    delete_list(&world);
+    init_list(&world);
+    add_list(&world, &root, &hit_bvh, &get_bvh_box);
     
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
-    cam.samples_per_pixel = 10;//200;
+    cam.samples_per_pixel = 200;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 40;
@@ -508,6 +528,9 @@ void cornell_box(){
     delete_texture(&(white.tex));
     delete_texture(&(green.tex));
     delete_texture(&(dif_light.tex));
+    delete_cube(cube1);
+    delete_cube(cube2);
+    delete_bvh(&root);
     delete_list(&world); 
 }
 

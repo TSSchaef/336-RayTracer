@@ -76,7 +76,7 @@ void sort_list(hittable_list *l, int start, int end, int axis){
    }
 }
 
-bool hit(hittable_list *l, ray r, double ray_tmin, 
+bool hit(void *l, ray r, double ray_tmin, 
         double ray_tmax, hit_record *rec){
     hit_record temp_rec;
     bool hit_anything = false;
@@ -84,8 +84,8 @@ bool hit(hittable_list *l, ray r, double ray_tmin,
 
     int i;
     hittable_node *currNode;
-    for(i = 0; i < l->size; i++){
-        currNode = l->list[i];
+    for(i = 0; i < ((hittable_list *)l)->size; i++){
+        currNode = ((hittable_list *)l)->list[i];
         if((*(currNode->is_hit))(currNode->hittable, r, ray_tmin, closest_so_far,
                     &temp_rec)) {
             hit_anything = true;
@@ -94,4 +94,18 @@ bool hit(hittable_list *l, ray r, double ray_tmin,
         }
     }
     return hit_anything;
+}
+
+aabb get_list_box(void *l){
+    return ((hittable_list *)l)->box;
+}
+
+aabb get_list_box_interval(hittable_list *l, int start, int end){
+    aabb box;
+    copy_box(&box, (*(l->list[start]->get_box))(l->list[start]->hittable));
+    int i;
+    for(i = start + 1; i < end; i++){
+        add_boxes(&box, (*(l->list[i]->get_box))(l->list[i]->hittable));
+    }
+    return box;
 }

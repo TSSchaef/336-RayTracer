@@ -29,7 +29,9 @@ void init_list(hittable_list *l);
 void add_list(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get);
 hittable_node *index_list(hittable_list *l, int i);
 void delete_list(hittable_list *l);
-bool hit(hittable_list *l, ray r, double ray_tmin, 
+bool hit(void *l, ray r, double ray_tmin, 
         double ray_tmax, hit_record *rec);
+aabb get_list_box(void *l);
+aabb get_list_box_interval(hittable_list *l, int start, int end);
 
 #endif

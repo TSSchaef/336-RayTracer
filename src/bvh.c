@@ -1,4 +1,5 @@
 #include "bvh.h"
+#include "hittable_list.h"
 
 void bvh_setup(bvh_node *b, hittable_list *l, int start, int end);
 
@@ -21,6 +22,7 @@ bool hit_bvh(void *b, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
 }
 
 void bvh_setup(bvh_node *b, hittable_list *l, int start, int end){
+    copy_box(&(b->bbox), get_list_box_interval(l, start, end)); 
     int axis = longest_axis(b->bbox);
 
     int span = end - start;
