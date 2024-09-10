@@ -114,3 +114,12 @@ bool hit_box(void *box, ray r, double ray_tmin, double ray_tmax){
 
     return true;
 }
+
+void shift_box(aabb *box, vector3 offset){  
+    box->x[0] += offset.e[x];
+    box->x[1] += offset.e[x];
+    box->y[0] += offset.e[y];
+    box->y[1] += offset.e[y];
+    box->z[0] += offset.e[z];
+    box->z[1] += offset.e[z];
+}

@@ -6,7 +6,7 @@
 #include "sphere.h"
 #include "bvh.h"
 #include "quad.h"
-
+#include "instance.h"
 
 void orig_scene() {
     hittable_list world;
@@ -483,17 +483,28 @@ void cornell_box(){
     add_list(&world, &q6, &hit_quad, &get_quad_box);
 
     point3 p1, p2, p3, p4;
-    init(&p1, 130, 0, 65);
-    init(&p2, 295, 165, 230);
-    init(&p3, 265, 0, 295);
-    init(&p4, 430, 330, 460);
+    init(&p1, 0, 0, 0);
+    init(&p2, 165, 330, 165);
+    init(&p3, 0, 0, 0);
+    init(&p4, 165, 165, 165);
     
     hittable_list *cube1, *cube2;
     cube1 = init_cube(p1, p2, white);
     cube2 = init_cube(p3, p4, white);
 
-    add_list(&world, cube1, &hit, &get_list_box);
-    add_list(&world, cube2, &hit, &get_list_box);
+    rotate r1, r2;
+    init_rotate(&r1, cube1, &hit, cube1->box, 15);
+    init_rotate(&r2, cube2, &hit, cube2->box, -18);
+
+    translate t1, t2;
+    vector3 o1, o2;
+    init(&o1, 265, 0, 295);
+    init(&o2, 130, 0, 65);
+    init_translate(&t1, &r1, &hit_rotate, r1.bbox, o1);
+    init_translate(&t2, &r2, &hit_rotate, r2.bbox, o2);
+
+    add_list(&world, &t1, &hit_translate, &get_translate_box);
+    add_list(&world, &t2, &hit_translate, &get_translate_box);
     
     bvh_node root;
     init_bvh(&root, &world);

@@ -20,5 +20,6 @@ void copy_box(aabb *box, aabb to_copy);
 int longest_axis(aabb box);
 
 bool hit_box(void *box, ray r, double ray_tmin, double ray_tmax);
+void shift_box(aabb *box, vector3 offset);
 
 #endif
