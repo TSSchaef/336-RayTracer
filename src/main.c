@@ -7,6 +7,7 @@
 #include "bvh.h"
 #include "quad.h"
 #include "instance.h"
+#include "constant_medium.h"
 
 void orig_scene() {
     hittable_list world;
@@ -545,8 +546,138 @@ void cornell_box(){
     delete_list(&world); 
 }
 
+void cornell_smoke(){
+    hittable_list world;
+    init_list(&world);
+    
+    color r, w, g, l;
+    init(&l, 7.0, 7.0, 7.0);
+    init(&w, 0.73, 0.73, 0.73);
+    init(&r, 0.65, 0.05, 0.05);
+    init(&g, 0.12, 0.45, 0.15);
+
+    material dif_light, red, white, green;
+
+    init_lambertian(&red, r);
+    init_lambertian(&white, w);
+    init_lambertian(&green, g);
+    init_diffuse_light(&dif_light, l);
+
+    quad q1, q2, q3, q4, q5, q6;
+    point3 q1Q, q2Q, q3Q, q4Q, q5Q, q6Q;
+    vector3 q1u, q2u, q3u, q4u, q5u, q6u;
+    vector3 q1v, q2v, q3v, q4v, q5v, q6v;
+    
+    init(&q1Q, 555, 0, 0);
+    init(&q2Q, 0, 0, 0);
+    init(&q3Q, 113, 554, 127);
+    init(&q4Q, 0, 555, 0);
+    init(&q5Q, 0, 0, 0);
+    init(&q6Q, 0, 0, 555);
+
+    init(&q1u, 0, 555, 0);
+    init(&q2u, 0, 555, 0);
+    init(&q3u, 330, 0, 0);
+    init(&q4u, 555, 0, 0);
+    init(&q5u, 555, 0, 0);
+    init(&q6u, 555, 0, 0);
+
+    init(&q1v, 0, 0, 555);
+    init(&q2v, 0, 0, 555);
+    init(&q3v, 0, 0, 305);
+    init(&q4v, 0, 0, 555);
+    init(&q5v, 0, 0, 555);
+    init(&q6v, 0, 555, 0);
+
+    init_quad(&q1, q1Q, q1u, q1v, green);
+    init_quad(&q2, q2Q, q2u, q2v, red);
+    init_quad(&q3, q3Q, q3u, q3v, dif_light);
+    init_quad(&q4, q4Q, q4u, q4v, white);
+    init_quad(&q5, q5Q, q5u, q5v, white);
+    init_quad(&q6, q6Q, q6u, q6v, white);
+
+    add_list(&world, &q1, &hit_quad, &get_quad_box);
+    add_list(&world, &q2, &hit_quad, &get_quad_box);
+    add_list(&world, &q3, &hit_quad, &get_quad_box);
+    add_list(&world, &q4, &hit_quad, &get_quad_box);
+    add_list(&world, &q5, &hit_quad, &get_quad_box);
+    add_list(&world, &q6, &hit_quad, &get_quad_box);
+
+    point3 p1, p2, p3, p4;
+    init(&p1, 0, 0, 0);
+    init(&p2, 165, 330, 165);
+    init(&p3, 0, 0, 0);
+    init(&p4, 165, 165, 165);
+    
+    hittable_list *cube1, *cube2;
+    cube1 = init_cube(p1, p2, white);
+    cube2 = init_cube(p3, p4, white);
+
+    rotate r1, r2;
+    init_rotate(&r1, cube1, &hit, cube1->box, 15);
+    init_rotate(&r2, cube2, &hit, cube2->box, -18);
+
+    translate t1, t2;
+    vector3 o1, o2;
+    init(&o1, 265, 1, 295);
+    init(&o2, 130, 1, 65);
+    init_translate(&t1, &r1, &hit_rotate, r1.bbox, o1);
+    init_translate(&t2, &r2, &hit_rotate, r2.bbox, o2);
+
+    constant_medium c1, c2;
+    color cmc1, cmc2;
+    init(&cmc1, 0, 0, 0);
+    init(&cmc2, 1, 1, 1);
+
+    init_constant_medium(&c1, &t1, &hit_translate, 0.01, t1.bbox, cmc1);
+    init_constant_medium(&c2, &t2, &hit_translate, 0.01, t2.bbox, cmc2);
+
+    add_list(&world, &c1, &hit_constant_medium, &get_constant_medium_box);
+    add_list(&world, &c2, &hit_constant_medium, &get_constant_medium_box);
+    
+    bvh_node root;
+    init_bvh(&root, &world);
+
+    delete_list(&world);
+    init_list(&world);
+    add_list(&world, &root, &hit_bvh, &get_bvh_box);
+    
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 600;
+    cam.samples_per_pixel = 200;
+    init(&(cam.background), 0, 0, 0);
+    cam.max_depth = 50;
+    cam.vfov = 40;
+    
+    point3 f, a, v;
+    init(&f, 278, 278, -800);
+    init(&a, 278, 278, 0);
+    init(&v, 0, 1, 0);
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world);
+    
+    delete_texture(&(red.tex));
+    delete_texture(&(white.tex));
+    delete_texture(&(green.tex));
+    delete_texture(&(dif_light.tex));
+    delete_texture(&(c1.phase_func.tex));
+    delete_texture(&(c2.phase_func.tex));
+    delete_cube(cube1);
+    delete_cube(cube2);
+    delete_bvh(&root);
+    delete_list(&world); 
+}
+
 int main(int argc, char *argv[]){
-    switch(7){
+    switch(8){
         case 1: orig_scene(); break;
         case 2: checkered_spheres(); break;
         case 3: earth(); break;
@@ -554,6 +685,7 @@ int main(int argc, char *argv[]){
         case 5: quads(); break;
         case 6: simple_light(); break;
         case 7: cornell_box(); break;
+        case 8: cornell_smoke(); break;
     }   
     return 0;
 }

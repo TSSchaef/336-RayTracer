@@ -67,6 +67,31 @@ void init_lambertian_tex(material *m, texture t){
     copy_texture(&(m->tex), t);
 }
 
+bool isotropic_scatter(ray ray_in, 
+        struct hit_record *rec, color *attenuation, ray *ray_out){
+    init_ray(ray_out, rec->p, random_unit_vector());  
+    copy(attenuation, (*(rec->mat.tex.value))(&(rec->mat.tex), rec->u, rec->v, rec->p));
+    return true;
+}
+
+void init_isotropic(material *m, color a){
+    init(&(m->albedo), 0, 0, 0);
+    m->fuzz = 0;
+    m->scatter_func = &isotropic_scatter;
+    m->emit = &non_emitting;
+    texture t;
+    init_solid_tex(&t, a);
+    copy_texture(&(m->tex), t);
+}
+
+void init_isotropic_tex(material *m, texture t){
+    init(&(m->albedo), 0, 0, 0);
+    m->fuzz = 0;
+    m->scatter_func = &isotropic_scatter;
+    m->emit = &non_emitting;
+    copy_texture(&(m->tex), t);
+}
+
 bool metal_scatter(ray ray_in, 
         struct hit_record *rec, color *attenuation, ray *ray_out){
     vector3 reflection = reflect(ray_in.dir, rec->normal);

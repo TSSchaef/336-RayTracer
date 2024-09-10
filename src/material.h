@@ -41,6 +41,11 @@ void init_lambertian_tex(material *m, texture t);
 bool lambertian_scatter(ray ray_in, 
         struct hit_record *rec, color *attenuation, ray *ray_out);
 
+void init_isotropic(material *m, color a);
+void init_isotropic_tex(material *m, texture t);
+bool isotropic_scatter(ray ray_in, 
+        struct hit_record *rec, color *attenuation, ray *ray_out);
+
 void init_metal(material *m, color a, double fuzz);
 bool metal_scatter(ray ray_in, 
         struct hit_record *rec, color *attenuation, ray *ray_out);
