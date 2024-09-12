@@ -1,8 +1,4 @@
 #include "quad.h"
-#include "aabb.h"
-#include "hittable_list.h"
-#include "material.h"
-#include "vector3.h"
 
 static void set_bbox(quad *q){
     point3 temp;

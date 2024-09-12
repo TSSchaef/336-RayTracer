@@ -6,6 +6,7 @@
 #include "sphere.h"
 #include "bvh.h"
 #include "quad.h"
+#include "triangle.h"
 #include "instance.h"
 #include "constant_medium.h"
 
@@ -676,8 +677,57 @@ void cornell_smoke(){
     delete_list(&world); 
 }
 
+void triangle_test(){
+    hittable_list world;
+    init_list(&world);
+    
+    color r;
+    init(&r, 0.80, 0.05, 0.0);
+
+    material red;
+
+    init_lambertian(&red, r);
+
+    triangle t1;
+    point3 t1Q;
+    vector3 t1u, t1v;
+    
+    init(&t1Q, 555, 0, 0);
+    init(&t1u, 0, 555, 0);
+    init(&t1v, 0, 0, 555);
+
+    init_triangle(&t1, t1Q, t1u, t1v, red);
+
+    add_list(&world, &t1, &hit_triangle, &get_triangle_box);
+
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 600;
+    cam.samples_per_pixel = 200;
+    init(&(cam.background), 1.0, 1.0, 0.7);
+    cam.max_depth = 50;
+    cam.vfov = 40;
+    
+    point3 f, a, v;
+    init(&f, 278, 278, -800);
+    init(&a, 278, 278, 0);
+    init(&v, 0, 1, 0);
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world);
+    
+    delete_texture(&(red.tex));
+    delete_list(&world); 
+}
+
 int main(int argc, char *argv[]){
-    switch(8){
+    switch(9){
         case 1: orig_scene(); break;
         case 2: checkered_spheres(); break;
         case 3: earth(); break;
@@ -686,6 +736,7 @@ int main(int argc, char *argv[]){
         case 6: simple_light(); break;
         case 7: cornell_box(); break;
         case 8: cornell_smoke(); break;
+        case 9: triangle_test(); break;
     }   
     return 0;
 }
