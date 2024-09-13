@@ -1,6 +1,7 @@
 
 #include "camera.h"
 #include "material.h"
+#include "mesh.h"
 #include "texture.h"
 #include "hittable_list.h"
 #include "sphere.h"
@@ -688,30 +689,26 @@ void triangle_test(){
 
     init_lambertian(&red, r);
 
-    triangle t1;
-    point3 t1Q;
-    vector3 t1u, t1v;
-    
-    init(&t1Q, 555, 0, 0);
-    init(&t1u, 0, 555, 0);
-    init(&t1v, 0, 0, 555);
+    bvh_node *tree = load_mesh("Tree.obj", red);
+    if(!tree){
+        delete_texture(&(red.tex));
+        return;
+    }
 
-    init_triangle(&t1, t1Q, t1u, t1v, red);
-
-    add_list(&world, &t1, &hit_triangle, &get_triangle_box);
+    add_list(&world, tree, &hit_bvh, &get_bvh_box);
 
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
-    cam.samples_per_pixel = 200;
+    cam.samples_per_pixel = 2;//0;
     init(&(cam.background), 1.0, 1.0, 0.7);
     cam.max_depth = 50;
-    cam.vfov = 40;
+    cam.vfov = 70;
     
     point3 f, a, v;
-    init(&f, 278, 278, -800);
-    init(&a, 278, 278, 0);
+    init(&f, 600, 0, 10);
+    init(&a, 0, 100, 0);
     init(&v, 0, 1, 0);
     copy(&(cam.lookfrom), f);
     copy(&(cam.lookat), a);
@@ -720,9 +717,10 @@ void triangle_test(){
     cam.defocus_angle = 0;
     cam.focus_dist = 2;
 
-    render(&cam, &world);
+    //render(&cam, &world);
     
     delete_texture(&(red.tex));
+    delete_mesh(tree);
     delete_list(&world); 
 }
 

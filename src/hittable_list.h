@@ -8,6 +8,8 @@
 #include "material.h"
 #include "aabb.h"
 
+#define INIT_SIZE 2
+
 typedef bool (*fptr_is_hit)(void *, ray, double, double, hit_record *);
 
 typedef struct hittable_node{
@@ -18,8 +20,8 @@ typedef struct hittable_node{
 } hittable_node;
 
 typedef struct hittable_list{
+    hittable_node **list;
     aabb box;
-    hittable_node *list[10];
     int size;
     int max_size;
 } hittable_list;

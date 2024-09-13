@@ -1,51 +1,30 @@
 #include "triangle.h"
 
-static void set_bbox(triangle*q){
-    point3 temp;
-    copy(&temp, q->Q); 
+static void set_bbox(triangle *t){
+    point3 min, max;
 
-    add_vector(&(temp), q->u);
-    add_vector(&(temp), q->v);
+    init(&min, fmin(t->a.e[x], fmin(t->b.e[x], t->c.e[x])), fmin(t->a.e[y], fmin(t->b.e[y], t->c.e[y])), fmin(t->a.e[z], fmin(t->b.e[z], t->c.e[z])));
 
-    init_aabb_points(&(q->bbox), q->Q, temp);
+    init(&max, fmax(t->a.e[x], fmax(t->b.e[x], t->c.e[x])), fmax(t->a.e[y], fmax(t->b.e[y], t->c.e[y])), fmax(t->a.e[z], fmax(t->b.e[z], t->c.e[z])));
 
-    aabb temp_box;
-    point3 temp2;
-    copy(&temp, q->Q); 
-    copy(&temp2, q->Q); 
-    
-    add_vector(&(temp), q->u);
-    add_vector(&(temp2), q->v);
-
-    init_aabb_points(&temp_box, temp, temp2);
-
-    add_boxes(&(q->bbox), temp_box);
+    init_aabb_points(&(t->bbox), min, max);
 }
 
-void init_triangle(triangle *q, point3 Qc, vector3 uc, vector3 vc, material matc){
-    copy(&(q->Q), Qc);  
-    copy(&(q->u), uc);  
-    copy(&(q->v), vc);  
-
-    q->normal = cross(uc, vc);
-
-    copy(&(q->w), q->normal);
-    scale(&(q->w), 1.0 / dot(q->normal, q->normal));
+void init_triangle(triangle *q, point3 a, point3 b, point3 c, material matc){
+    copy(&(q->a), a);  
+    copy(&(q->b), b);  
+    copy(&(q->c), c);  
     
-    unit_vector(&(q->normal));
+    invert(&(a));
+    add_vector(&(b), a);
+    add_vector(&(c), a);
 
-    q->D = dot(q->normal, Qc);
+    copy(&(q->normal), cross(b, a));
+
+    q->D = dot(q->normal, q->normal);
 
     copy_material(&(q->mat), matc);
     set_bbox(q);
-}
-
-static bool is_interior(triangle *q, double a, double b, hit_record *rec){
-    if(a < 0 || b < 0 || a + b > 1) return false;
-
-    rec->u = a;
-    rec->v = b;
-    return true;
 }
 
 bool hit_triangle(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
@@ -53,21 +32,52 @@ bool hit_triangle(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *
     double denom = dot(qu->normal, r.dir);
     
     if(denom < 1e-8 && denom > -1e-8) return false;
+    
+    point3 temp;
+    copy(&temp, r.orig);
+    invert(&temp);
+    add_vector(&temp, qu->a);
 
-    double t = (qu->D - dot(qu->normal, r.orig)) / denom;
+    double t = dot(qu->normal, temp) / denom;
     if(t < ray_tmin || t > ray_tmax) return false;
 
     point3 intersection = at(r, t);
-    vector3 planar_hitpt;
-    copy(&planar_hitpt, qu->Q);
-    invert(&planar_hitpt);
-    add_vector(&planar_hitpt, intersection);
 
-    double alpha = dot(qu->w, cross(planar_hitpt, qu->v));
-    double beta = dot(qu->w, cross(qu->u, planar_hitpt));
+    point3 bary;
+    point3 negA, negB, negC;
+    point3 d1, d2;
+    point3 na, nb, nc;
 
-    if(!is_interior(qu, alpha, beta, rec))
+    copy(&negA, qu->a);
+    copy(&negB, qu->b);
+    copy(&negC, qu->c);
+    invert(&negA);
+    invert(&negB);
+    invert(&negC);
+
+    copy(&d1, qu->c);
+    copy(&d2, intersection);
+    add_vector(&d1, negB);
+    add_vector(&d2, negB);
+    copy(&na, cross(d1, d2));
+
+    copy(&d1, qu->a);
+    copy(&d2, intersection);
+    add_vector(&d1, negC);
+    add_vector(&d2, negC);
+    copy(&nb, cross(d1, d2));
+
+    copy(&d1, qu->b);
+    copy(&d2, intersection);
+    add_vector(&d1, negA);
+    add_vector(&d2, negA);
+    copy(&nc, cross(d1, d2));
+
+    init(&bary, dot(qu->normal, na) / qu->D, dot(qu->normal, nb) / qu->D, dot(qu->normal, nc) / qu->D);
+
+    if(bary.e[0] < 0 || bary.e[1] < 0 || bary.e[2] < 0){
         return false;
+    }
 
     rec->t = t;
     copy(&(rec->p), intersection);

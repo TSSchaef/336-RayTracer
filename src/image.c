@@ -22,9 +22,9 @@ void load_image(image *i, const char *filename){
     i->image_height = 0;
     i->bytes_per_scanline = 0;
 
-    char str1[] = "img/";
-    char str2[] = "../img/";
-    char str3[] = "../../img/";
+    char str1[25] = "img/";
+    char str2[25] = "../img/";
+    char str3[25] = "../../img/";
     if(load(i, strcat(str1, filename))) return; 
     if(load(i, strcat(str2, filename))) return; 
     if(load(i, strcat(str3, filename))) return; 

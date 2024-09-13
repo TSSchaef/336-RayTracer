@@ -2,18 +2,20 @@
 
 void init_list(hittable_list *l){
     l->size = 0;
-    l->max_size = 10;
+    l->max_size = INIT_SIZE;
+    l->list = (hittable_node **) malloc(INIT_SIZE * sizeof(hittable_node *));
 }
 
 void add_list(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get){
     if(l->size == l->max_size){
         l->max_size *= 2;
-        hittable_node *temp[l->max_size];
+        hittable_node **temp = (hittable_node **) malloc(l->max_size * sizeof(hittable_node *));
         int i;
         for(i = 0; i < l->size; i++){
             temp[i] = l->list[i];
         }
-        *(l->list) = *temp;
+        free(l->list);
+        l->list = temp;
     }
     hittable_node *currNode = (hittable_node *) malloc(sizeof(hittable_node));
     currNode->hittable = h;
@@ -33,6 +35,7 @@ void delete_list(hittable_list *l){
         l->size--;
         free(l->list[l->size]);
     }
+    free(l->list);
     l->size = 0;
 }
 

@@ -25,5 +25,6 @@ void init_bvh(bvh_node *b, hittable_list *list);
 bool hit_bvh(void *b, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
 
 void delete_bvh(bvh_node *b);
+void delete_bvh_and_data(bvh_node *b);
 
 #endif
