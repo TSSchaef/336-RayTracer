@@ -9,7 +9,12 @@
 #include "triangle.h"
 #include "material.h"
 
-hittable_list *load_mesh(const char* filename, material m);
-void delete_mesh(bvh_node *b);
+typedef struct {
+    bvh_node *bvh;
+    hittable_list *list;
+} mesh;
+
+mesh *load_mesh(const char* filename, material m);
+void delete_mesh(mesh *m);
 
 #endif

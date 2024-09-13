@@ -85,15 +85,12 @@ void orig_scene() {
 
     add_list(&world, &s6, &hit_sphere, &get_sphere_box); 
 
-    bool using_BVH = world.size > 10;
     bvh_node root;
-    if(using_BVH){
-        init_bvh(&root, &world);
+    init_bvh(&root, &world);
 
-        delete_list(&world);
-        init_list(&world);
-        add_list(&world, &root, &hit_bvh, &get_bvh_box);
-    }
+    delete_list(&world);
+    init_list(&world);
+    add_list(&world, &root, &hit_bvh, &get_bvh_box);
 
     //initializing camera
     camera cam;
@@ -118,7 +115,7 @@ void orig_scene() {
     
     render(&cam, &world);
 
-    if(using_BVH) delete_bvh(&root);
+    delete_bvh(&root);
 
     delete_texture(&(((checker*)t2.pattern)->even));
     delete_texture(&(((checker*)t2.pattern)->odd));
@@ -679,8 +676,8 @@ void cornell_smoke(){
 }
 
 void triangle_test(){
-    //hittable_list world;
-    //init_list(&world);
+    hittable_list world;
+    init_list(&world);
     
     color r;
     init(&r, 0.80, 0.05, 0.0);
@@ -689,27 +686,37 @@ void triangle_test(){
 
     init_lambertian(&red, r);
 
-    hittable_list *tree = load_mesh("Tree.obj", red);
+    mesh *tree = load_mesh("Tree.obj", red);
+    //mesh *tree = load_mesh("teapot.obj", red);
     if(!tree){
         delete_texture(&(red.tex));
+        delete_list(&world); 
         return;
     }
 
-    //add_list(&world, tree, &hit_bvh, &get_bvh_box);
+    add_list(&world, tree->bvh, &hit_bvh, &get_bvh_box);
 
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
-    cam.samples_per_pixel = 2;//0;
+    cam.samples_per_pixel = 1;//0;
     init(&(cam.background), 1.0, 1.0, 0.7);
     cam.max_depth = 50;
     cam.vfov = 70;
     
     point3 f, a, v;
-    init(&f, 600, 0, 10);
+    /*
+    //teapot camera
+    init(&f, 0, 4, 5);
+    init(&a, 0.3, 0.5, 0);
+    init(&v, 0, 1, 0);*/
+    
+    //tree camera
+    init(&f, 1000, 0, 1000);
     init(&a, 0, 100, 0);
     init(&v, 0, 1, 0);
+
     copy(&(cam.lookfrom), f);
     copy(&(cam.lookat), a);
     copy(&(cam.vup), v);
@@ -717,16 +724,11 @@ void triangle_test(){
     cam.defocus_angle = 0;
     cam.focus_dist = 2;
 
-    render(&cam, tree);
+    render(&cam, &world);
     
     delete_texture(&(red.tex));
-    //delete_mesh(tree);
-    int i;
-    for(i = 0; i < tree->size; i++){
-        free(tree->list[i]->hittable);
-    }
-    delete_list(tree); 
-    free(tree);
+    delete_mesh(tree);
+    delete_list(&world); 
 }
 
 int main(int argc, char *argv[]){

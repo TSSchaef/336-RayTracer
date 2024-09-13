@@ -76,7 +76,7 @@ static bool load(obj_data *d, char * filename){
     return false;
 }
 
-hittable_list *load_mesh(const char* filename, material m){
+mesh *load_mesh(const char* filename, material mat){
     obj_data d;
     d.shapes = NULL;
     d.materials = NULL;
@@ -94,40 +94,48 @@ hittable_list *load_mesh(const char* filename, material m){
         }
     }
 
-    hittable_list *list = malloc(sizeof(hittable_list));  
-    init_list(list);
+    mesh *m = (mesh *) malloc(sizeof(mesh));
+    m->list = (hittable_list *) malloc(sizeof(hittable_list));
+    m->bvh = NULL;
+    init_list(m->list);
 
-    int i, f;
+    int i;
     point3 *points = (point3 *) malloc(d.attrib.num_vertices * sizeof(point3));
     for(i = 0 ; i < d.attrib.num_vertices; i++){
         init(points + i, d.attrib.vertices[3 * i], d.attrib.vertices[(3 * i) + 1], d.attrib.vertices[(3 * i) + 2]);
     }
 
-    
-    
-    for(i = 0; i < d.attrib.num_face_num_verts; i++){
-        if(d.attrib.face_num_verts[i] % 3 != 0){
-            fprintf(stderr, "ERROR: Face is not a triangle!");
+    for(i = 0; i + 2 < d.attrib.num_faces; i += 3){
+        int f0 = d.attrib.faces[i + 0].v_idx;
+        int f1 = d.attrib.faces[i + 1].v_idx;
+        int f2 = d.attrib.faces[i + 2].v_idx;
+
+        if(f0 < 0 || f0 > d.attrib.num_vertices ||
+                f1 < 0 || f1 > d.attrib.num_vertices ||
+                f2 < 0 || f2 > d.attrib.num_vertices) {
+            continue;
+        }
+
+        vector3 normal;
+        int nid0 = d.attrib.faces[i + 0].vn_idx;
+        int nid1 = d.attrib.faces[i + 1].vn_idx;
+        int nid2 = d.attrib.faces[i + 2].vn_idx;
+
+        if(nid0 < 0 || nid0 > d.attrib.num_normals ||
+           nid1 < 0 || nid1 > d.attrib.num_normals ||
+           nid2 < 0 || nid2 > d.attrib.num_normals){
+
+            //no normal for triangle in obj file
+            triangle *t = (triangle *) malloc(sizeof(triangle));
+            init_triangle(t, points[f0], points[f1], points[f2], mat);
+            add_list(m->list, t, &hit_triangle, &get_triangle_box);
+
         } else {
-            for(f = 0; f < d.attrib.face_num_verts[i] / 3; f++){
-                int f0 = d.attrib.faces[(3*f) + 0].v_idx;
-                int f1 = d.attrib.faces[(3*f) + 1].v_idx;
-                int f2 = d.attrib.faces[(3*f) + 2].v_idx;
+            init(&normal, d.attrib.normals[nid0], d.attrib.normals[nid1], d.attrib.normals[nid2]);
 
-                if(f0 < 0 || f0 > d.attrib.num_vertices ||
-                   f1 < 0 || f1 > d.attrib.num_vertices ||
-                   f2 < 0 || f2 > d.attrib.num_vertices) {
-                    continue;
-                }
-
-                vector3 normal;
-                int nid = d.attrib.faces[(3*f) + 0].vn_idx;
-                init(&normal, d.attrib.normals[nid], d.attrib.normals[nid + 1], d.attrib.normals[nid + 2]);
-
-                triangle *t = (triangle *) malloc(sizeof(triangle));
-                init_triangle_norm(t, points[f2], points[f0], points[f1], normal, m);
-                add_list(list, t, &hit_triangle, &get_triangle_box);
-            }
+            triangle *t = (triangle *) malloc(sizeof(triangle));
+            init_triangle_norm(t, points[f0], points[f1], points[f2], normal, mat);
+            add_list(m->list, t, &hit_triangle, &get_triangle_box);
         }
     }
 
@@ -137,21 +145,32 @@ hittable_list *load_mesh(const char* filename, material m){
     tinyobj_shapes_free(d.shapes, d.num_shapes);
     tinyobj_materials_free(d.materials, d.num_materials);
 
-    if(list->size < 1){
-        delete_list(list);
+    if(m->list->size < 1){
+        delete_list(m->list);
+        free(m->list);
+        free(m);
         return NULL;
     }
-
-    return list;
         
-    /*bvh_node *root = (bvh_node *) malloc(sizeof(bvh_node));
-    init_bvh(root, &list);
-    delete_list(&list);
+    m->bvh = (bvh_node *) malloc(sizeof(bvh_node));
+    init_bvh(m->bvh, m->list);
 
-    return root;*/
+    return m;
 }
 
-void delete_mesh(bvh_node *b){
-    delete_bvh_and_data(b);
-    free(b);
+void delete_mesh(mesh *m){
+    if(m->bvh){
+        delete_bvh(m->bvh);
+        free(m->bvh);
+    }
+    if(m->list){
+        int i;
+        for(i = 0; i < m->list->size; i++){
+            free(m->list->list[i]->hittable);
+        }
+
+        delete_list(m->list);
+        free(m->list);
+    }
+    free(m);
 }

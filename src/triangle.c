@@ -2,7 +2,7 @@
 
 static void set_bbox(triangle *t){
     point3 min, max;
-
+    
     init(&min, fmin(t->a.e[x], fmin(t->b.e[x], t->c.e[x])), fmin(t->a.e[y], fmin(t->b.e[y], t->c.e[y])), fmin(t->a.e[z], fmin(t->b.e[z], t->c.e[z])));
 
     init(&max, fmax(t->a.e[x], fmax(t->b.e[x], t->c.e[x])), fmax(t->a.e[y], fmax(t->b.e[y], t->c.e[y])), fmax(t->a.e[z], fmax(t->b.e[z], t->c.e[z])));
@@ -15,6 +15,13 @@ void init_triangle_norm(triangle *t, point3 a, point3 b, point3 c, vector3 n, ma
     copy(&(t->b), b);  
     copy(&(t->c), c);  
     copy(&(t->normal), n);
+
+    /*printf("Triangle: \n");
+    print(t->a);
+    print(t->b);
+    print(t->c);
+    print(t->normal);
+    printf("\n \n");*/
 
     t->D = dot(t->normal, t->normal);
 

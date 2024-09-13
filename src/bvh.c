@@ -80,15 +80,18 @@ void delete_bvh(bvh_node *b){
 }
 
 void delete_bvh_and_data(bvh_node *b){
+    if(b->is_leaf){
+        free(b->left);
+        free(b->right);
+        return;
+    }
     bvh_node *l;
     bvh_node *r;
     l = (bvh_node*)b->left;
     r = (bvh_node*)b->right;
 
-    if(!b->is_leaf){
-        delete_bvh(l);
-        delete_bvh(r);
-    }
+    delete_bvh(l);
+    delete_bvh(r);
 
     free(l);
     free(r);
