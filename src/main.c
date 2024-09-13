@@ -679,8 +679,8 @@ void cornell_smoke(){
 }
 
 void triangle_test(){
-    hittable_list world;
-    init_list(&world);
+    //hittable_list world;
+    //init_list(&world);
     
     color r;
     init(&r, 0.80, 0.05, 0.0);
@@ -689,13 +689,13 @@ void triangle_test(){
 
     init_lambertian(&red, r);
 
-    bvh_node *tree = load_mesh("Tree.obj", red);
+    hittable_list *tree = load_mesh("Tree.obj", red);
     if(!tree){
         delete_texture(&(red.tex));
         return;
     }
 
-    add_list(&world, tree, &hit_bvh, &get_bvh_box);
+    //add_list(&world, tree, &hit_bvh, &get_bvh_box);
 
     //initializing camera
     camera cam;
@@ -717,11 +717,16 @@ void triangle_test(){
     cam.defocus_angle = 0;
     cam.focus_dist = 2;
 
-    //render(&cam, &world);
+    render(&cam, tree);
     
     delete_texture(&(red.tex));
-    delete_mesh(tree);
-    delete_list(&world); 
+    //delete_mesh(tree);
+    int i;
+    for(i = 0; i < tree->size; i++){
+        free(tree->list[i]->hittable);
+    }
+    delete_list(tree); 
+    free(tree);
 }
 
 int main(int argc, char *argv[]){

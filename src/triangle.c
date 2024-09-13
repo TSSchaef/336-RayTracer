@@ -10,6 +10,18 @@ static void set_bbox(triangle *t){
     init_aabb_points(&(t->bbox), min, max);
 }
 
+void init_triangle_norm(triangle *t, point3 a, point3 b, point3 c, vector3 n, material mat){
+    copy(&(t->a), a);  
+    copy(&(t->b), b);  
+    copy(&(t->c), c);  
+    copy(&(t->normal), n);
+
+    t->D = dot(t->normal, t->normal);
+
+    copy_material(&(t->mat), mat);
+    set_bbox(t);
+}
+
 void init_triangle(triangle *q, point3 a, point3 b, point3 c, material matc){
     copy(&(q->a), a);  
     copy(&(q->b), b);  

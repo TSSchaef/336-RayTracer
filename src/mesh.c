@@ -76,7 +76,7 @@ static bool load(obj_data *d, char * filename){
     return false;
 }
 
-bvh_node *load_mesh(const char* filename, material m){
+hittable_list *load_mesh(const char* filename, material m){
     obj_data d;
     d.shapes = NULL;
     d.materials = NULL;
@@ -94,14 +94,16 @@ bvh_node *load_mesh(const char* filename, material m){
         }
     }
 
-    hittable_list list;  
-    init_list(&list);
+    hittable_list *list = malloc(sizeof(hittable_list));  
+    init_list(list);
 
     int i, f;
     point3 *points = (point3 *) malloc(d.attrib.num_vertices * sizeof(point3));
     for(i = 0 ; i < d.attrib.num_vertices; i++){
         init(points + i, d.attrib.vertices[3 * i], d.attrib.vertices[(3 * i) + 1], d.attrib.vertices[(3 * i) + 2]);
     }
+
+    
     
     for(i = 0; i < d.attrib.num_face_num_verts; i++){
         if(d.attrib.face_num_verts[i] % 3 != 0){
@@ -118,9 +120,13 @@ bvh_node *load_mesh(const char* filename, material m){
                     continue;
                 }
 
+                vector3 normal;
+                int nid = d.attrib.faces[(3*f) + 0].vn_idx;
+                init(&normal, d.attrib.normals[nid], d.attrib.normals[nid + 1], d.attrib.normals[nid + 2]);
+
                 triangle *t = (triangle *) malloc(sizeof(triangle));
-                init_triangle(t, points[f2], points[f0], points[f1], m);
-                add_list(&list, t, &hit_triangle, &get_triangle_box);
+                init_triangle_norm(t, points[f2], points[f0], points[f1], normal, m);
+                add_list(list, t, &hit_triangle, &get_triangle_box);
             }
         }
     }
@@ -131,16 +137,18 @@ bvh_node *load_mesh(const char* filename, material m){
     tinyobj_shapes_free(d.shapes, d.num_shapes);
     tinyobj_materials_free(d.materials, d.num_materials);
 
-    if(list.size < 1){
-        delete_list(&list);
+    if(list->size < 1){
+        delete_list(list);
         return NULL;
     }
+
+    return list;
         
-    bvh_node *root = (bvh_node *) malloc(sizeof(bvh_node));
+    /*bvh_node *root = (bvh_node *) malloc(sizeof(bvh_node));
     init_bvh(root, &list);
     delete_list(&list);
 
-    return root;
+    return root;*/
 }
 
 void delete_mesh(bvh_node *b){

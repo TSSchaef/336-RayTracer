@@ -9,7 +9,7 @@
 #include "triangle.h"
 #include "material.h"
 
-bvh_node *load_mesh(const char* filename, material m);
+hittable_list *load_mesh(const char* filename, material m);
 void delete_mesh(bvh_node *b);
 
 #endif
