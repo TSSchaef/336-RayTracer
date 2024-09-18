@@ -10,35 +10,40 @@ static void set_bbox(triangle *t){
     init_aabb_points(&(t->bbox), min, max);
 }
 
-void init_triangle_norm(triangle *t, point3 a, point3 b, point3 c, vector3 n, material mat){
+/*void init_triangle_norm(triangle *t, point3 a, point3 b, point3 c, vector3 n, material mat){
     copy(&(t->a), a);  
     copy(&(t->b), b);  
     copy(&(t->c), c);  
     copy(&(t->normal), n);
 
-    /*printf("Triangle: \n");
-    print(t->a);
-    print(t->b);
-    print(t->c);
-    print(t->normal);
-    printf("\n \n");*/
+    //printf("Triangle: \n");
+    //print(t->a);
+    //print(t->b);
+    //print(t->c);
+    //print(t->normal);
+    //printf("\n \n");
 
     t->D = dot(t->normal, t->normal);
 
     copy_material(&(t->mat), mat);
     set_bbox(t);
-}
+}*/
 
 void init_triangle(triangle *q, point3 a, point3 b, point3 c, material matc){
     copy(&(q->a), a);  
     copy(&(q->b), b);  
     copy(&(q->c), c);  
-    
-    invert(&(a));
-    add_vector(&(b), a);
-    add_vector(&(c), a);
 
-    copy(&(q->normal), cross(b, a));
+    point3 invA, ba, ca;
+    copy(&invA, a);
+    invert(&invA);
+
+    copy(&(ba), b);  
+    add_vector(&(ba), invA);
+    copy(&(ca), c);  
+    add_vector(&(ca), invA);
+    
+    copy(&(q->normal), cross(ba, ca));
 
     q->D = dot(q->normal, q->normal);
 
@@ -52,15 +57,13 @@ bool hit_triangle(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *
     
     if(denom < 1e-8 && denom > -1e-8) return false;
     
-    point3 temp;
-    copy(&temp, r.orig);
-    invert(&temp);
-    add_vector(&temp, qu->a);
+    double d = -1 * dot(qu->normal, qu->a);
 
-    double t = dot(qu->normal, temp) / denom;
+    double t = -1 * (dot(qu->normal, r.orig) + d) / denom;
     if(t < ray_tmin || t > ray_tmax) return false;
 
-    point3 intersection = at(r, t);
+    point3 intersection;
+    copy(&intersection, at(r, t));
 
     point3 bary;
     point3 negA, negB, negC;

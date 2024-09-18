@@ -116,27 +116,10 @@ mesh *load_mesh(const char* filename, material mat){
             continue;
         }
 
-        vector3 normal;
-        int nid0 = d.attrib.faces[i + 0].vn_idx;
-        int nid1 = d.attrib.faces[i + 1].vn_idx;
-        int nid2 = d.attrib.faces[i + 2].vn_idx;
-
-        if(nid0 < 0 || nid0 > d.attrib.num_normals ||
-           nid1 < 0 || nid1 > d.attrib.num_normals ||
-           nid2 < 0 || nid2 > d.attrib.num_normals){
-
-            //no normal for triangle in obj file
-            triangle *t = (triangle *) malloc(sizeof(triangle));
-            init_triangle(t, points[f0], points[f1], points[f2], mat);
-            add_list(m->list, t, &hit_triangle, &get_triangle_box);
-
-        } else {
-            init(&normal, d.attrib.normals[nid0], d.attrib.normals[nid1], d.attrib.normals[nid2]);
-
-            triangle *t = (triangle *) malloc(sizeof(triangle));
-            init_triangle_norm(t, points[f0], points[f1], points[f2], normal, mat);
-            add_list(m->list, t, &hit_triangle, &get_triangle_box);
-        }
+        //no normal for triangle in obj file
+        triangle *t = (triangle *) malloc(sizeof(triangle));
+        init_triangle(t, points[f0], points[f1], points[f2], mat);
+        add_list(m->list, t, &hit_triangle, &get_triangle_box);
     }
 
     free(points);

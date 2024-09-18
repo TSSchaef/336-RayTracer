@@ -402,7 +402,7 @@ void simple_light(){
     camera cam;
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
-    cam.samples_per_pixel = 5;//100;
+    cam.samples_per_pixel = 100;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 20;
@@ -688,6 +688,7 @@ void triangle_test(){
 
     mesh *tree = load_mesh("Tree.obj", red);
     //mesh *tree = load_mesh("teapot.obj", red);
+    //mesh *tree = load_mesh("cube.obj", red);
     if(!tree){
         delete_texture(&(red.tex));
         delete_list(&world); 
@@ -695,7 +696,7 @@ void triangle_test(){
     }
 
     add_list(&world, tree->bvh, &hit_bvh, &get_bvh_box);
-
+    
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
@@ -706,9 +707,9 @@ void triangle_test(){
     cam.vfov = 70;
     
     point3 f, a, v;
-    /*
+    
     //teapot camera
-    init(&f, 0, 4, 5);
+    /*init(&f, 0, 4, 5);
     init(&a, 0.3, 0.5, 0);
     init(&v, 0, 1, 0);*/
     
