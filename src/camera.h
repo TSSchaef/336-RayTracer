@@ -4,6 +4,8 @@
 #include "util.h"
 #include "material.h"
 #include "hittable_list.h"
+//#include "pthread.h"
+#include "stdint.h"
 
 typedef struct {
     double aspect_ratio;

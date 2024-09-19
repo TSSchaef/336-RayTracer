@@ -679,44 +679,54 @@ void triangle_test(){
     hittable_list world;
     init_list(&world);
     
-    color r;
-    init(&r, 0.80, 0.05, 0.0);
+    color r, l;
+    init(&r, 0.9, 0.9, 0.75);
+    init(&l, 15.0, 15.0, 15.0);
 
-    material red;
+    material dif_light, mat;
 
-    init_lambertian(&red, r);
+    //init_dielectric(&mat, 1.00/1.33);
+    //init_metal(&mat, r, 0);
+    init_lambertian(&mat, r);
+    init_diffuse_light(&dif_light, l);
 
-    mesh *tree = load_mesh("Tree.obj", red);
-    //mesh *tree = load_mesh("teapot.obj", red);
-    //mesh *tree = load_mesh("cube.obj", red);
+    //mesh *tree = load_mesh("Tree.obj", mat);
+    point3 center;
+    init(&center, 1, 3.5, 0.5);
+    sphere s;
+    init_sphere(&s, center, 0.3, dif_light);
+
+    mesh *tree = load_mesh("teapot.obj", mat);
+    //mesh *tree = load_mesh("cube.obj", mat);
     if(!tree){
-        delete_texture(&(red.tex));
+        delete_texture(&(mat.tex));
         delete_list(&world); 
         return;
     }
 
     add_list(&world, tree->bvh, &hit_bvh, &get_bvh_box);
+    add_list(&world, &s, &hit_sphere, &get_sphere_box);
     
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
-    cam.samples_per_pixel = 1;//0;
-    init(&(cam.background), 1.0, 1.0, 0.7);
+    cam.samples_per_pixel = 150;
+    init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 70;
     
     point3 f, a, v;
     
     //teapot camera
-    /*init(&f, 0, 4, 5);
+    init(&f, 0, 4, 5);
     init(&a, 0.3, 0.5, 0);
-    init(&v, 0, 1, 0);*/
+    init(&v, 0, 1, 0);
     
     //tree camera
-    init(&f, 1000, 0, 1000);
+    /*init(&f, 1000, 0, 1000);
     init(&a, 0, 100, 0);
-    init(&v, 0, 1, 0);
+    init(&v, 0, 1, 0);*/
 
     copy(&(cam.lookfrom), f);
     copy(&(cam.lookat), a);
@@ -727,7 +737,8 @@ void triangle_test(){
 
     render(&cam, &world);
     
-    delete_texture(&(red.tex));
+    delete_texture(&(mat.tex));
+    delete_texture(&(dif_light.tex));
     delete_mesh(tree);
     delete_list(&world); 
 }

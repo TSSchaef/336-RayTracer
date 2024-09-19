@@ -164,10 +164,13 @@ double linear_to_gamma(double x){
     return 0;
 }
 
-void print_color(color c){
+void print_color(color c, uint8_t pixel[3]){
     int rbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[r]));
     int gbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[g])); 
     int bbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[b])); 
 
-    printf("%d %d %d\n", rbyte, gbyte, bbyte);
+    //printf("%d %d %d\n", rbyte, gbyte, bbyte);
+    pixel[r] = rbyte;
+    pixel[g] = gbyte;
+    pixel[b] = bbyte;
 }

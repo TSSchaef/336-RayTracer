@@ -5,7 +5,7 @@ INCDIRS=src ext
 
 CC=gcc
 OPT=-O0
-LIBFLAGS=-lm
+LIBFLAGS=-lm -lpthread
 DEPFLAGS=-MP -MD
 CFLAGS=-Wall -Werror -g $(foreach D, $(INCDIRS), -I$(D)) $(OPT) $(DEPFLAGS)
 

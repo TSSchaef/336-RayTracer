@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct vector3{
     double e[3];
@@ -44,6 +45,6 @@ vector3 random_default_vector();
 vector3 random_vector(double min, double max);
 
 void print(vector3 v);
-void print_color(color c);
+void print_color(color c, uint8_t pixel[3]);
 
 #endif

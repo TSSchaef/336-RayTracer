@@ -1,5 +1,12 @@
 #include "camera.h"
 
+typedef struct {
+    camera *c;
+    hittable_list *world;
+    uint8_t *pixel;
+    int x, y;
+} pixel_info;
+
 color ray_color(ray r, int depth, hittable_list *world, color background){
     if(depth <= 0){
         color black;
@@ -126,28 +133,68 @@ ray get_ray(camera *c, int i, int j){
     return r;
 }
 
+void *render_pixel(void *context){
+    pixel_info *p = (pixel_info *) context;
+    color pixel_color;
+    init(&pixel_color, 0, 0, 0);
+    int sample;
+    for(sample = 0; sample < p->c->samples_per_pixel; sample++){
+        ray r = get_ray(p->c, p->x, p->y);
+        add_vector(&pixel_color, ray_color(r, p->c->max_depth, p->world, p->c->background));
+    }
+
+    scale(&pixel_color, p->c->pixel_samples_scale);
+    print_color(pixel_color, p->pixel);
+    //unused return value necessary for thread syntax
+    return NULL;
+}
+
 void render(camera *c, hittable_list *world){
     initialize(c);
+    
+    FILE *img = fopen("image.ppm", "wb");
+    if(!img){
+        fprintf(stderr, "ERROR: Unable to open image file to write to");
+        return;
+    }
+    fprintf(img, "P3\n %d %d\n255\n", c->image_width, c->image_height);
 
-    printf("P3\n %d %d\n255\n", c->image_width, c->image_height);
+    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 3 * sizeof(uint8_t));
 
     int i, j;
     for(j = 0; j < c->image_height; j++) {
         fprintf(stderr, "\rScanlines remaining: %d        ", c->image_height - j);
         fflush(stderr);
-        for(i = 0; i < c->image_width; i++){
-            color pixel_color;
-            init(&pixel_color, 0, 0, 0);
 
-            int sample;
-            for(sample = 0; sample < c->samples_per_pixel; sample++){
-                ray r = get_ray(c, i, j);
-                add_vector(&pixel_color, ray_color(r, c->max_depth, world, c->background));
-            }
-            
-            scale(&pixel_color, c->pixel_samples_scale);
-            print_color(pixel_color);
+        //pthread_t threads[c->image_width];
+
+        for(i = 0; i < c->image_width; i++){
+            pixel_info context;
+            context.c = c;
+            context.world = world;
+            context.x = i;
+            context.y = j;
+            context.pixel = raster + (j * c->image_width) + i;
+
+            //pthread_create(&threads[i], NULL, render_pixel, &context);
+            render_pixel(&context);
+        }
+        
+        //waiting for all threads in this scanline to finish
+        /*for(i = 0; i < c->image_width; i++){
+            pthread_join(threads[i], NULL);
+        }*/
+
+    }
+    
+    for(j = 0; j < c->image_height; j++) {
+        for(i = 0; i < c->image_width; i++){
+            uint8_t *pixel = raster + (j * c->image_width) + i;
+            fprintf(img, "%d %d %d\n", pixel[r], pixel[g], pixel[b]);
         }
     }
+    free(raster);
+    fclose(img);
+
     fprintf(stderr, "\rDone.                       \n");
 }
