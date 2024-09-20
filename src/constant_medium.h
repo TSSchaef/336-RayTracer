@@ -21,9 +21,9 @@ void init_constant_medium(constant_medium *s, void *hittable,
         fptr_is_hit hit, double density, aabb box, color albedo);
 void init_constant_medium_tex(constant_medium *s, void *hittable, 
         fptr_is_hit hit, double density, aabb box, texture tex);
-bool hit_constant_medium(void *c, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
+bool hit_constant_medium(const void *c, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
 
-aabb get_constant_medium_box(void *s);
+aabb get_constant_medium_box(const void *s);
 
 #endif
 

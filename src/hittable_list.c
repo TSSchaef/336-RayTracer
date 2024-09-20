@@ -79,7 +79,7 @@ void sort_list(hittable_list *l, int start, int end, int axis){
    }
 }
 
-bool hit(void *l, ray r, double ray_tmin, 
+bool hit(const void *l, ray r, double ray_tmin, 
         double ray_tmax, hit_record *rec){
     hit_record temp_rec;
     bool hit_anything = false;
@@ -99,7 +99,7 @@ bool hit(void *l, ray r, double ray_tmin,
     return hit_anything;
 }
 
-aabb get_list_box(void *l){
+aabb get_list_box(const void *l){
     return ((hittable_list *)l)->box;
 }
 

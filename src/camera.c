@@ -1,13 +1,15 @@
 #include "camera.h"
+#include <pthread.h>
 
 typedef struct {
-    camera *c;
-    hittable_list *world;
+    const camera *c;
+    const hittable_list *world;
     uint8_t *pixel;
+    pthread_mutex_t *mutex;
     int x, y;
 } pixel_info;
 
-color ray_color(ray r, int depth, hittable_list *world, color background){
+color ray_color(ray r, int depth, const hittable_list *world, color background){
     if(depth <= 0){
         color black;
         init(&black, 0, 0, 0);
@@ -92,9 +94,10 @@ void initialize(camera *c){
     scale(&(c->defocus_disk_v), defocus_radius);
 }
 
-point3 defocus_disk_sample(camera *c){
+point3 defocus_disk_sample(const camera *c){
     point3 p = random_in_unit_disk();
     point3 u, v;
+    
     copy(&u, c->defocus_disk_u);
     scale(&u, p.e[0]);
     copy(&v, c->defocus_disk_v);
@@ -103,15 +106,17 @@ point3 defocus_disk_sample(camera *c){
     copy(&p, u);
     add_vector(&p, v);
     add_vector(&p, c->center); 
+
     return p;
 }
 
-ray get_ray(camera *c, int i, int j){
+ray get_ray(const camera *c, int i, int j){
     //sample square
     point3 pixel_sample;
     init(&pixel_sample, RAND_DOUBLE - 0.5, RAND_DOUBLE - 0.5, 0);
 
     point3 u_offset, v_offset;
+
     copy(&u_offset, c->pixel_delta_u);
     copy(&v_offset, c->pixel_delta_v);
     scale(&u_offset, i + pixel_sample.e[x]);
@@ -138,13 +143,18 @@ void *render_pixel(void *context){
     color pixel_color;
     init(&pixel_color, 0, 0, 0);
     int sample;
+
     for(sample = 0; sample < p->c->samples_per_pixel; sample++){
         ray r = get_ray(p->c, p->x, p->y);
         add_vector(&pixel_color, ray_color(r, p->c->max_depth, p->world, p->c->background));
     }
 
     scale(&pixel_color, p->c->pixel_samples_scale);
+
+    pthread_mutex_lock(p->mutex);
     print_color(pixel_color, p->pixel);
+    pthread_mutex_unlock(p->mutex);
+
     //unused return value necessary for thread syntax
     return NULL;
 }
@@ -166,7 +176,8 @@ void render(camera *c, hittable_list *world){
         fprintf(stderr, "\rScanlines remaining: %d        ", c->image_height - j);
         fflush(stderr);
 
-        //pthread_t threads[c->image_width];
+        pthread_t threads[c->image_width];
+        pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
         for(i = 0; i < c->image_width; i++){
             pixel_info context;
@@ -175,16 +186,16 @@ void render(camera *c, hittable_list *world){
             context.x = i;
             context.y = j;
             context.pixel = raster + (j * c->image_width) + i;
+            context.mutex = &mutex;
 
-            //pthread_create(&threads[i], NULL, render_pixel, &context);
-            render_pixel(&context);
+            pthread_create(&threads[i], NULL, render_pixel, &context);
+            //render_pixel(&context);
         }
         
         //waiting for all threads in this scanline to finish
-        /*for(i = 0; i < c->image_width; i++){
+        for(i = 0; i < c->image_width; i++){
             pthread_join(threads[i], NULL);
-        }*/
-
+        }
     }
     
     for(j = 0; j < c->image_height; j++) {

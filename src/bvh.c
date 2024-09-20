@@ -3,7 +3,7 @@
 
 void bvh_setup(bvh_node *b, hittable_list *l, int start, int end);
 
-aabb get_bvh_box(void *b){
+aabb get_bvh_box(const void *b){
     return ((bvh_node*)b)->bbox;
 }
 
@@ -11,7 +11,7 @@ void init_bvh(bvh_node *b, hittable_list *list){
     bvh_setup(b, list, 0, list->size); 
 }
 
-bool hit_bvh(void *b, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
+bool hit_bvh(const void *b, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     if(!hit_box(&(((bvh_node*)b)->bbox), r, ray_tmin, ray_tmax))
         return false;
 

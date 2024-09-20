@@ -10,7 +10,7 @@ void init_translate(translate *t, void *h, fptr_is_hit hit, aabb box, vector3 o)
     shift_box(&(t->bbox), t->offset);
 }
 
-bool hit_translate(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
+bool hit_translate(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     translate *t = ((translate *)s);
     ray offset_r;
     point3 p;
@@ -27,7 +27,7 @@ bool hit_translate(void *s, ray r, double ray_tmin, double ray_tmax, hit_record 
     return true;
 }
 
-aabb get_translate_box(void *s){
+aabb get_translate_box(const void *s){
     return ((translate *)s)->bbox;
 }
 
@@ -68,7 +68,7 @@ void init_rotate(rotate *r, void *h, fptr_is_hit hit, aabb box, double theta){\
     init_aabb_points(&(r->bbox), min, max);
 }
 
-bool hit_rotate(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
+bool hit_rotate(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     rotate *ro = ((rotate *)s);
 
     point3 origin;
@@ -106,7 +106,7 @@ bool hit_rotate(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *re
     return true;
 }
 
-aabb get_rotate_box(void *s){
+aabb get_rotate_box(const void *s){
     return ((rotate *)s)->bbox;
 }
 

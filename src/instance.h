@@ -25,12 +25,12 @@ typedef struct{
 } rotate;
 
 void init_translate(translate *t, void *hittable, fptr_is_hit hit, aabb box, vector3 o);
-bool hit_translate(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
-aabb get_translate_box(void *s);
+bool hit_translate(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
+aabb get_translate_box(const void *s);
 
 
 void init_rotate(rotate *r, void *hittable, fptr_is_hit hit, aabb box, double theta);
-bool hit_rotate(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
-aabb get_rotate_box(void *s);
+bool hit_rotate(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
+aabb get_rotate_box(const void *s);
 
 #endif

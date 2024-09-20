@@ -18,7 +18,7 @@ void init_constant_medium_tex(constant_medium *s, void *h,
     init_isotropic_tex(&(s->phase_func), tex);
 }
 
-bool hit_constant_medium(void *c, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
+bool hit_constant_medium(const void *c, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     hit_record r1, r2;
     
     constant_medium *m = ((constant_medium *)c);
@@ -57,6 +57,6 @@ bool hit_constant_medium(void *c, ray r, double ray_tmin, double ray_tmax, hit_r
     return true;
 }
 
-aabb get_constant_medium_box(void *s){
+aabb get_constant_medium_box(const void *s){
     return ((constant_medium *)s)->bbox;
 }
