@@ -1,13 +1,13 @@
 #include "camera.h"
+#include "util.h"
 #include <pthread.h>
 
 typedef struct {
     const camera *c;
     const hittable_list *world;
-    uint8_t *pixel_line;
-    pthread_mutex_t *mutex;
-    int y;
-} pixel_info;
+    uint8_t *pixel_offset;
+    int height, offset;
+} portion_info;
 
 color ray_color(ray r, int depth, const hittable_list *world, color background){
     if(depth <= 0){
@@ -138,25 +138,25 @@ ray get_ray(const camera *c, int i, int j){
     return r;
 }
 
-void *render_line(void *context){
-    pixel_info *p = (pixel_info *) context;
+void *render_portion(void *context){
+    portion_info *p = (portion_info *) context;
     color pixel_color;
     init(&pixel_color, 0, 0, 0);
-    int i, sample;
+    int i, j, sample;
     
-    //pthread_mutex_lock(p->mutex);
-    for(i = 0; i < p->c->image_width; i++){
-        for(sample = 0; sample < p->c->samples_per_pixel; sample++){
-            ray r = get_ray(p->c, i, p->y);
-            add_vector(&pixel_color, ray_color(r, p->c->max_depth, p->world, p->c->background));
+    for(j = 0; j < p->height; j++){
+        for(i = 0; i < p->c->image_width; i++){
+            for(sample = 0; sample < p->c->samples_per_pixel; sample++){
+                ray r = get_ray(p->c, i, p->offset + j);
+                add_vector(&pixel_color, ray_color(r, p->c->max_depth, p->world, p->c->background));
+            }
+
+            scale(&pixel_color, p->c->pixel_samples_scale);
+
+            print_color(pixel_color, p->pixel_offset + 3*((j * p->c->image_width) + i));
+
         }
-
-        scale(&pixel_color, p->c->pixel_samples_scale);
-
-        print_color(pixel_color, p->pixel_line + 3*i);
-
     }
-    //pthread_mutex_unlock(p->mutex);
 
     //unused return value necessary for thread syntax
     return NULL;
@@ -172,45 +172,44 @@ void render(camera *c, const hittable_list *world){
     }
     fprintf(img, "P3\n %d %d\n255\n", c->image_width, c->image_height);
 
-    //uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 3 * sizeof(uint8_t));
+    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 3 * sizeof(uint8_t));
 
-    int i, j;
-    uint8_t *raster[c->image_height];
-    pixel_info *contexts[c->image_height];
-    pthread_t threads[c->image_height];
-    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    int i;
+    portion_info *contexts[NUM_THREADS];
+    pthread_t threads[NUM_THREADS];
+    int height = c->image_height;
+    for(i = 0; i < NUM_THREADS; i++){
+        contexts[i] = (portion_info *) malloc(sizeof(portion_info));
+        contexts[i]->c = c;
+        contexts[i]->world = world;
 
-    for(j = 0; j < c->image_height; j++) {
-        contexts[j] = (pixel_info *) malloc(sizeof(pixel_info));
-        contexts[j]->c = c;
-        contexts[j]->world = world;
-        contexts[j]->y = j;
-        raster[j] = (uint8_t *) malloc(c->image_width * 3 * sizeof(uint8_t));
-        contexts[j]->pixel_line = raster[j];
-        contexts[j]->mutex = &mutex;
-
-        pthread_create(&threads[j], NULL, &render_line, contexts[j]);
-
-        //pthread_join(threads[j], NULL);
-        //render_pixel(&context);
+        //adding 1 additional line of the render to each portion to eliminate
+        //any potential extra portion at the end (if the height isn't divisible
+        //by the number of threads)
         
-        //waiting for all threads in this scanline to finish
+        contexts[i]->offset = i * ((c->image_height / NUM_THREADS) + 1);
+        contexts[i]->height = (height >= (c->image_height / NUM_THREADS) + 1)? (c->image_height / NUM_THREADS) + 1: height;
+        contexts[i]->pixel_offset = raster + 3 * contexts[i]->offset * c->image_width;
+
+        pthread_create(&threads[i], NULL, &render_portion, contexts[i]);
+        height -= (c->image_height / NUM_THREADS) + 1;
     }
     
-    for(i = 0; i < c->image_height; i++){
-        //fprintf(stderr, "\rScanlines remaining: %d        ", c->image_height - i);
-        //fflush(stderr);
+    for(i = 0; i < NUM_THREADS; i++){
+        //waiting for all threads to finish
         pthread_join(threads[i], NULL);
+        free(contexts[i]);
     }
 
+    int j;
     for(j = 0; j < c->image_height; j++) {
         for(i = 0; i < c->image_width; i++){
-            uint8_t *pixel = raster[j] + 3*i;
+            uint8_t *pixel = raster + 3*((j * c->image_width) + i);
             fprintf(img, "%d %d %d\n", pixel[r], pixel[g], pixel[b]);
         }
-        free(raster[j]);
-        free(contexts[j]);
     }
+
+    free(raster);
     fclose(img);
 
     fprintf(stderr, "\rDone.                       \n");
