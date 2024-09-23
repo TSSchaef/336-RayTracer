@@ -4,12 +4,12 @@ void delete_texture(texture *t){
     free(t->pattern);
 }
 
-void copy_texture(texture *t, texture to_copy){
+void copy_texture(texture *t, const texture to_copy){
     t->pattern = to_copy.pattern;
     t->value = to_copy.value;
 }
 
-color solid_value(texture *t, double u, double v, point3 p){
+color solid_value(const texture *t, double u, double v, point3 p){
     return ((solid*)(t->pattern))->albedo;
 }
 
@@ -36,13 +36,13 @@ int my_floor(double x){
     return (int) x;
 }
 
-void copy_checker(checker *c, checker to_copy){
+void copy_checker(checker *c, const checker to_copy){
     copy_texture(&(c->even), to_copy.even);
     copy_texture(&(c->odd), to_copy.odd);
     c->inv_scale = to_copy.inv_scale;
 }
 
-color checker_value(texture *t, double u, double v, point3 p){
+color checker_value(const texture *t, double u, double v, point3 p){
     checker c;
     copy_checker(&c, *((checker *) t->pattern));
     int xf = my_floor(c.inv_scale * p.e[x]); 
@@ -87,7 +87,7 @@ static double clamp(double x, double low, double high){
     return high;
 }
 
-color image_value(texture *t, double u, double v, point3 p){
+color image_value(const texture *t, double u, double v, point3 p){
     image *i = &(((image_tex *)t->pattern)->img);
     
     if(i->image_height <= 0){
@@ -218,12 +218,12 @@ void init_perlin(perlin *p, double s){
     perlin_generate_perm(p->perm_z);
 }
 
-color perlin_value(texture *t, double u, double v, point3 p){
+color perlin_value(const texture *t, double u, double v, point3 p){
     color c;
     init(&c, 0.5, 0.5, 0.5);
    
     double s = ((perlin *)t->pattern)->scale * p.e[z];
-    //s += ((perlin *)t->pattern)->scale * p.e[x];
+    s += ((perlin *)t->pattern)->scale * p.e[x];
     s += 10*turb(((perlin *)t->pattern), p, 7);
     scale(&c, 1 + sin(s));
     return c;

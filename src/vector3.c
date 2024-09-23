@@ -7,7 +7,7 @@ void init(vector3 *v, double e1, double e2, double e3){
     v->e[2] = e3;
 }
 
-void copy(vector3 *v, vector3 w){
+void copy(vector3 *v, const vector3 w){
     v->e[0] = w.e[0];
     v->e[1] = w.e[1];
     v->e[2] = w.e[2];
@@ -19,7 +19,7 @@ void invert(vector3 *v){
    v->e[2] *= -1;
 }
 
-void add_vector(vector3 *v, vector3 w){
+void add_vector(vector3 *v, const vector3 w){
     v->e[0] += w.e[0];
     v->e[1] += w.e[1];
     v->e[2] += w.e[2];
@@ -31,24 +31,24 @@ void scale(vector3 *v, double t){
     v->e[2] *= t;
 }
 
-double length(vector3 v){
+double length(const vector3 v){
     return sqrt(v.e[0]*v.e[0] + v.e[1]*v.e[1] + v.e[2]*v.e[2]);
 }
 
-double length_squared(vector3 v){
+double length_squared(const vector3 v){
     return v.e[0]*v.e[0] + v.e[1]*v.e[1] + v.e[2]*v.e[2];
 }
 
-bool near_zero(vector3 v){
+bool near_zero(const vector3 v){
     double s = 0.00000001;
     return (v.e[0] < s && v.e[0] > -1 * s) && (v.e[1] < s && v.e[1] > -1 * s) && (v.e[2] < s && v.e[2] > -1 * s);
 }
 
-double dot(vector3 v, vector3 w){
+double dot(const vector3 v, const vector3 w){
     return v.e[0]*w.e[0] + v.e[1]*w.e[1] + v.e[2]*w.e[2];
 }
 
-vector3 cross(vector3 u, vector3 v){
+vector3 cross(const vector3 u, const vector3 v){
    vector3 ans;
    init(&ans, (u.e[1] * v.e[2]) - (u.e[2] * v.e[1]), (u.e[2] * v.e[0]) - (u.e[0] * v.e[2]), (u.e[0] * v.e[1]) - (u.e[1] * v.e[0]));
 
@@ -63,7 +63,7 @@ void unit_vector(vector3 *v){
     v->e[2] /= l;
 }
 
-vector3 attenuate(vector3 v, vector3 w){
+vector3 attenuate(const vector3 v, const vector3 w){
     vector3 ans;
     copy(&ans, w);
     ans.e[0] *= v.e[0];
@@ -72,7 +72,7 @@ vector3 attenuate(vector3 v, vector3 w){
     return ans;
 }
 
-vector3 reflect(vector3 v, vector3 n){
+vector3 reflect(const vector3 v, const vector3 n){
     vector3 ans;
     copy(&ans, n);
     scale(&ans, -2 * dot(v, n));
@@ -80,11 +80,12 @@ vector3 reflect(vector3 v, vector3 n){
     return ans;
 }
 
-vector3 refract(vector3 v, vector3 n, double etai_over_etat){
-    invert(&v);
-    double cos_theta = dot(v, n); 
+vector3 refract(const vector3 v, const vector3 n, double etai_over_etat){
+    vector3 invV;
+    copy(&invV, v);
+    invert(&invV);
+    double cos_theta = dot(invV, n); 
     cos_theta = (cos_theta > 1.0) ? 1.0 : cos_theta;
-    invert(&v);
 
     vector3 r_out_perp;
     copy(&r_out_perp, n);
@@ -139,7 +140,7 @@ vector3 random_unit_vector(){
     return v;
 }
 
-vector3 random_on_hemisphere(vector3 normal){
+vector3 random_on_hemisphere(const vector3 normal){
     vector3 v = random_unit_vector();
     if(dot(v, normal) > 0.0){
         return v;
@@ -148,7 +149,7 @@ vector3 random_on_hemisphere(vector3 normal){
     return v;
 }
 
-void print(vector3 v){
+void print(const vector3 v){
     printf("%lf %lf %lf\n", v.e[0], v.e[1], v.e[2]);
 }
 
@@ -164,7 +165,7 @@ double linear_to_gamma(double x){
     return 0;
 }
 
-void print_color(color c, uint8_t pixel[3]){
+void print_color(const color c, uint8_t pixel[3]){
     int rbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[r]));
     int gbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[g])); 
     int bbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[b])); 
