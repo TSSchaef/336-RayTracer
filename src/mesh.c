@@ -50,7 +50,7 @@ static void get_file_data(void* ctx, const char* filename, const int is_mtl,
     } else {
         c->obj = *data;
     }
-
+    
     fread(*data, 1, size, f);
     (*data)[size] = '\0';
 
