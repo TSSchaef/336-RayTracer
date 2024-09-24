@@ -31,7 +31,9 @@ The ray tracer currently implements:
 * Depth of Field
 
 ### Usage 
-Scenes are currently written in **main.c**, there is a switch statement in the main function that can be used to select a given scene. (TODO write an example scene describing how to build a scene). For more optimized rendering adjust *NUM_THREADS* in "util.h" to roughly match the number of cores available on the CPU the ray tracer will run on.
+Scenes are written in **scenes.c**, to add a scene it needs to be added to the switch within *render_scene()* and *NUM_SCENES* needs to be incremented. (TODO write an example scene describing how to build a scene). To select which scene to render a commandline argument can be passed with the scene's id. If no argument is passed the scene with the highest id will be rendered.
+For more optimized rendering adjust *NUM_THREADS* in "util.h" to roughly match the number of cores available on the CPU the ray tracer will run on.
+To load images or object files place them into the /img folder and simply use the file's name when calling it within the project (ie. **"earthmap.jpg"**).
 
 ### Plans 
 Current plans for the project include adding features for:
