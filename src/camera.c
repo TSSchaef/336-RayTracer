@@ -114,7 +114,7 @@ point3 defocus_disk_sample(const camera *c){
 ray get_ray(const camera *c, int i, int j){
     //sample square
     point3 pixel_sample;
-    init(&pixel_sample, RAND_DOUBLE - 0.5, RAND_DOUBLE - 0.5, 0);
+    init(&pixel_sample, rnd_double() - 0.5, rnd_double() - 0.5, 0);
 
     point3 u_offset, v_offset;
 

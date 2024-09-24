@@ -205,7 +205,7 @@ void init_perlin(perlin *p, double s){
     int i;
     for(i = 0; i < POINT_COUNT; i++){
         vector3 v;
-        init(&v, RAND_DBL(-1, 1), RAND_DBL(-1, 1), RAND_DBL(-1, 1));
+        init(&v, rnd_dbl(-1, 1), rnd_dbl(-1, 1), rnd_dbl(-1, 1));
         unit_vector(&v);
         
         copy(&(p->randvec[i]), v);

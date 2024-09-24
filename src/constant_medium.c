@@ -1,4 +1,5 @@
 #include "constant_medium.h"
+#include "util.h"
 
 void init_constant_medium(constant_medium *s, void *h, 
         fptr_is_hit hit, double density, aabb box, color albedo){
@@ -41,7 +42,7 @@ bool hit_constant_medium(const void *c, ray r, double ray_tmin, double ray_tmax,
 
     double ray_length = length(r.dir);
     double dist_in_medium = (r2.t - r1.t) * ray_length;
-    double hit_dist = m->neg_inv_density * log(RAND_DOUBLE);
+    double hit_dist = m->neg_inv_density * log(rnd_double());
 
     if(hit_dist > dist_in_medium){
         return false;

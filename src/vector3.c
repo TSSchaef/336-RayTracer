@@ -107,13 +107,13 @@ vector3 refract(const vector3 v, const vector3 n, double etai_over_etat){
 
 vector3 random_default_vector(){
     vector3 v;
-    init(&v, RAND_DOUBLE, RAND_DOUBLE, RAND_DOUBLE);
+    init(&v, rnd_double(), rnd_double(), rnd_double());
     return v;
 }
 
 vector3 random_vector(double min, double max){
     vector3 v;
-    init(&v, RAND_DBL(min, max), RAND_DBL(min, max), RAND_DBL(min, max));
+    init(&v, rnd_dbl(min, max), rnd_dbl(min, max), rnd_dbl(min, max));
     return v;
 }
 
@@ -128,7 +128,7 @@ vector3 random_in_unit_sphere(){
 vector3 random_in_unit_disk(){
     while(1){
         vector3 p;
-        init(&p, RAND_DBL(-1, 1), RAND_DBL(-1, 1), 0);
+        init(&p, rnd_dbl(-1, 1), rnd_dbl(-1, 1), 0);
         if(length_squared(p) < 1)
             return p;
     }

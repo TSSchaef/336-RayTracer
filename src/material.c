@@ -1,4 +1,5 @@
 #include "material.h"
+#include "util.h"
 
 color non_emitting(const material *m, double u, double v, point3 p){
     color black;
@@ -146,7 +147,7 @@ bool dielectric_scatter(ray ray_in,
     bool cannot_refract = (ri * sin_theta) > 1.0;
 
     vector3 direction;
-    if(cannot_refract || reflectance(cos_theta, ri) > RAND_DOUBLE){
+    if(cannot_refract || reflectance(cos_theta, ri) > rnd_double()){
         copy(&direction, reflect(unit_dir, rec->normal));
     } else {
         copy(&direction, refract(unit_dir, rec->normal, ri));

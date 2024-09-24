@@ -27,7 +27,7 @@ $(BINARY): $(OBJECTS)
 .PHONY: clean
 
 clean:
-	rm -f $(OBJECTS) $(DEPFILES) $(BINARY) 
+	rm -f $(OBJECTS) $(DEPFILES) $(BINARY) perf.data*
 
 diff:
 	$(info The status of the repository, and the volume of per-file changes:)
