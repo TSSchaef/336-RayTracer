@@ -5,9 +5,10 @@
 typedef struct {
     const camera *c;
     const hittable_list *world;
-    uint8_t *pixel_offset;
-    int height, offset;
-} portion_info;
+    uint8_t *raster;
+    int *height;
+    pthread_mutex_t *mutex;
+} render_info;
 
 color ray_color(ray r, int depth, const hittable_list *world, color background){
     if(depth <= 0){
@@ -139,21 +140,30 @@ ray get_ray(const camera *c, int i, int j){
 }
 
 void *render_portion(void *context){
-    portion_info *p = (portion_info *) context;
+    render_info *p = (render_info *) context;
     color pixel_color;
     init(&pixel_color, 0, 0, 0);
     int i, j, sample;
     
-    for(j = 0; j < p->height; j++){
+    while(1){
+        pthread_mutex_lock(p->mutex); 
+            j = *(p->height);
+            *(p->height) += 1;
+        pthread_mutex_unlock(p->mutex);
+        fprintf(stderr, "\rScanlines remaining: %d        ", p->c->image_height - j);
+        fflush(stderr);
+
+        if(j >= p->c->image_height) break;
+
         for(i = 0; i < p->c->image_width; i++){
             for(sample = 0; sample < p->c->samples_per_pixel; sample++){
-                ray r = get_ray(p->c, i, p->offset + j);
+                ray r = get_ray(p->c, i, j);
                 add_vector(&pixel_color, ray_color(r, p->c->max_depth, p->world, p->c->background));
             }
 
             scale(&pixel_color, p->c->pixel_samples_scale);
 
-            print_color(pixel_color, p->pixel_offset + 3*((j * p->c->image_width) + i));
+            print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
 
         }
     }
@@ -174,25 +184,19 @@ void render(camera *c, const hittable_list *world){
 
     uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 3 * sizeof(uint8_t));
 
-    int i;
-    portion_info *contexts[NUM_THREADS];
+    int i, j, height = 0;
+    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    render_info *contexts[NUM_THREADS];
     pthread_t threads[NUM_THREADS];
-    int height = c->image_height;
     for(i = 0; i < NUM_THREADS; i++){
-        contexts[i] = (portion_info *) malloc(sizeof(portion_info));
+        contexts[i] = (render_info *) malloc(sizeof(render_info));
         contexts[i]->c = c;
         contexts[i]->world = world;
-
-        //adding 1 additional line of the render to each portion to eliminate
-        //any potential extra portion at the end (if the height isn't divisible
-        //by the number of threads)
-        
-        contexts[i]->offset = i * ((c->image_height / NUM_THREADS) + 1);
-        contexts[i]->height = (height >= (c->image_height / NUM_THREADS) + 1)? (c->image_height / NUM_THREADS) + 1: height;
-        contexts[i]->pixel_offset = raster + 3 * contexts[i]->offset * c->image_width;
+        contexts[i]->height = &height;
+        contexts[i]->raster = raster;
+        contexts[i]->mutex = &mutex;
 
         pthread_create(&threads[i], NULL, &render_portion, contexts[i]);
-        height -= (c->image_height / NUM_THREADS) + 1;
     }
     
     for(i = 0; i < NUM_THREADS; i++){
@@ -201,7 +205,6 @@ void render(camera *c, const hittable_list *world){
         free(contexts[i]);
     }
 
-    int j;
     for(j = 0; j < c->image_height; j++) {
         for(i = 0; i < c->image_width; i++){
             uint8_t *pixel = raster + 3*((j * c->image_width) + i);
