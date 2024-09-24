@@ -16,8 +16,8 @@ typedef struct {
 } sphere;
 
 void init_sphere(sphere *s, point3 center, double radius, material mat);
-bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
+bool hit_sphere(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
 
-aabb get_sphere_box(void *s);
+aabb get_sphere_box(const void *s);
 
 #endif

@@ -1,6 +1,6 @@
 #include "sphere.h"
 
-aabb get_sphere_box(void *s){
+aabb get_sphere_box(const void *s){
     return ((sphere*)s)->bbox;
 }
 
@@ -29,7 +29,7 @@ static void get_sphere_uv(point3 p, double *u, double *v){
     *v = theta / PI;
 }
 
-bool hit_sphere(void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
+bool hit_sphere(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     vector3 oc;
     
     copy(&oc, r.orig);

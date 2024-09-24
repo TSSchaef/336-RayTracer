@@ -10,6 +10,7 @@
 #include "triangle.h"
 #include "instance.h"
 #include "constant_medium.h"
+#include "util.h"
 
 void orig_scene() {
     hittable_list world;

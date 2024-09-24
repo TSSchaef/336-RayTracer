@@ -69,7 +69,7 @@ int longest_axis(aabb box){
     }
 }
 
-bool hit_box(void *box, ray r, double ray_tmin, double ray_tmax){
+bool hit_box(const void *box, ray r, double ray_tmin, double ray_tmax){
     double t0 = (((aabb*)box)->x[0] - r.orig.e[x]) * (1.0 / r.dir.e[x]);
     double t1 = (((aabb*)box)->x[1] - r.orig.e[x]) * (1.0 / r.dir.e[x]);
 

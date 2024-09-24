@@ -51,7 +51,7 @@ void init_triangle(triangle *q, point3 a, point3 b, point3 c, material matc){
     set_bbox(q);
 }
 
-bool hit_triangle(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
+bool hit_triangle(const void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     triangle *qu = ((triangle *) q);
     double denom = dot(qu->normal, r.dir);
     
@@ -109,6 +109,6 @@ bool hit_triangle(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *
     return true;
 }
 
-aabb get_triangle_box(void *s){
+aabb get_triangle_box(const void *s){
     return ((triangle *)s)->bbox;
 }

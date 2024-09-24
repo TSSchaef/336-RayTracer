@@ -1,6 +1,6 @@
 #include "material.h"
 
-color non_emitting(material *m, double u, double v, point3 p){
+color non_emitting(const material *m, double u, double v, point3 p){
     color black;
     init(&black, 0, 0, 0);
     return black;
@@ -171,7 +171,7 @@ bool non_scattering(ray ray_in,
     return false;
 }
 
-color emit(material *m, double u, double v, point3 p){
+color emit(const material *m, double u, double v, point3 p){
     return (*(m->tex.value))(&(m->tex), u, v, p);
 }
 

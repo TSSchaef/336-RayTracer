@@ -4,7 +4,7 @@
 #include "util.h"
 #include "material.h"
 #include "hittable_list.h"
-//#include "pthread.h"
+#include "pthread.h"
 #include "stdint.h"
 
 typedef struct {
@@ -34,6 +34,6 @@ typedef struct {
 } camera;
 
 void initialize(camera *c);
-void render(camera *c, hittable_list *world);
+void render(camera *c, const hittable_list *world);
 
 #endif

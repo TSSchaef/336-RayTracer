@@ -1,5 +1,5 @@
 #ifndef UTIL_H
-#define UITL_H
+#define UTIL_H
 
 #include <math.h>
 #include <stdlib.h>
@@ -7,6 +7,8 @@
 
 #include "vector3.h"
 #include "ray.h"
+
+#define NUM_THREADS 8
 
 #define PI 3.1415926535897932385
 #define DEG_TO_RAD(deg) ((deg * PI) / 180.0)

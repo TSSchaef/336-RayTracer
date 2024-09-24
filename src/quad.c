@@ -48,7 +48,7 @@ static bool is_interior(quad *q, double a, double b, hit_record *rec){
     return true;
 }
 
-bool hit_quad(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
+bool hit_quad(const void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
     quad *qu = ((quad *) q);
     double denom = dot(qu->normal, r.dir);
     
@@ -77,7 +77,7 @@ bool hit_quad(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec)
     return true;
 }
 
-aabb get_quad_box(void *s){
+aabb get_quad_box(const void *s){
     return ((quad *)s)->bbox;
 }
 

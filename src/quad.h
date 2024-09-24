@@ -20,8 +20,8 @@ typedef struct {
 } quad;
 
 void init_quad(quad *q, point3 Q, vector3 u, vector3 v, material mat);
-bool hit_quad(void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
-aabb get_quad_box(void *s);
+bool hit_quad(const void *q, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
+aabb get_quad_box(const void *s);
 
 hittable_list *init_cube(point3 a, point3 b, material mat);
 void delete_cube(hittable_list *l);
