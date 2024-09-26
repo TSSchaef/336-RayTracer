@@ -506,7 +506,7 @@ void cornell_box(){
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
-    cam.samples_per_pixel = 200;
+    cam.samples_per_pixel = 1000;//200;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 40;
@@ -686,6 +686,7 @@ void triangle_test(){
     init_sphere(&s, center, 0.3, dif_light);
 
     mesh *tree = load_mesh("teapot.obj", mat);
+    //mesh *tree = load_mesh("untitled.obj", mat); //needs work
     //mesh *tree = load_mesh("cube.obj", mat);
     if(!tree){
         delete_texture(&(mat.tex));
@@ -699,8 +700,8 @@ void triangle_test(){
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
-    cam.image_width = 600;
-    cam.samples_per_pixel = 150;
+    cam.image_width = 1000;
+    cam.samples_per_pixel = 350;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 70;

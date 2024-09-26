@@ -28,6 +28,7 @@ void scale(vector3 *v, double t);
 double length(const vector3 v);
 double length_squared(const vector3 v);
 bool near_zero(const vector3 v);
+double illuminance(const color v);
 
 vector3 attenuate(const vector3 v, const vector3 w);
 vector3 reflect(const vector3 v, const vector3 n);

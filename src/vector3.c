@@ -39,6 +39,10 @@ inline double length_squared(const vector3 v){
     return v.e[0]*v.e[0] + v.e[1]*v.e[1] + v.e[2]*v.e[2];
 }
 
+inline double illuminance(const color v){
+    return 0.2126 *v.e[0] + 0.7152 * v.e[1] + 0.0722 * v.e[2];
+}
+
 inline bool near_zero(const vector3 v){
     double s = 0.00000001;
     return (v.e[0] < s && v.e[0] > -1 * s) && (v.e[1] < s && v.e[1] > -1 * s) && (v.e[2] < s && v.e[2] > -1 * s);

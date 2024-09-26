@@ -144,6 +144,7 @@ void *render_portion(void *context){
     color pixel_color;
     init(&pixel_color, 0, 0, 0);
     int i, j, sample;
+    double illum, illumSum, illumSqrSum, sigSqr;
     
     while(1){
         pthread_mutex_lock(p->mutex); 
@@ -155,16 +156,34 @@ void *render_portion(void *context){
 
         if(j >= p->c->image_height) break;
 
+
         for(i = 0; i < p->c->image_width; i++){
-            for(sample = 0; sample < p->c->samples_per_pixel; sample++){
+            illumSum = 0;
+            illumSqrSum = 0;
+            for(sample = 1; sample <= p->c->samples_per_pixel; sample++){
                 ray r = get_ray(p->c, i, j);
-                add_vector(&pixel_color, ray_color(r, p->c->max_depth, p->world, p->c->background));
+
+                color sampleColor;
+                copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->c->background));
+                illum = illuminance(sampleColor);
+                illumSum += illum;
+                illumSqrSum += illum * illum;
+
+                add_vector(&pixel_color, sampleColor);
+
+                //checking if pixel illuminance has converged and the average
+                //sampled illuminance is within a 95% confidence interval.
+                //EQ is reqrranged to avoid divisions and square roots
+                //Stopping sampling early if so.
+                if(sample % SAMPLES_PER_BATCH == 0){
+                    sigSqr = ((illumSqrSum * sample) - (illumSum * illumSum)) / ((sample * sample) - sample);
+                    if(Z_95_VALUE_SQR * sample * sigSqr <= MAX_TOLERANCE_SQR * illumSum * illumSum) break;
+                }
             }
 
-            scale(&pixel_color, p->c->pixel_samples_scale);
+            scale(&pixel_color, 1.0 / sample);
 
             print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
-
         }
     }
 

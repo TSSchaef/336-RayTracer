@@ -7,6 +7,10 @@
 #include "pthread.h"
 #include "stdint.h"
 
+#define SAMPLES_PER_BATCH 50
+#define Z_95_VALUE_SQR 3.8416 
+#define MAX_TOLERANCE_SQR 0.0025
+
 typedef struct {
     double aspect_ratio;
     int image_width;
