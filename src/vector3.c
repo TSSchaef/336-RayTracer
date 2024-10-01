@@ -153,6 +153,20 @@ inline vector3 random_on_hemisphere(const vector3 normal){
     return v;
 }
 
+inline vector3 random_cosine_direction(){
+    double r1 = rnd_double();
+    double r2 = rnd_double();
+
+    double phi = 2 * PI * r1;
+    double x = cos(phi) * sqrt(r2);
+    double y = sin(phi) * sqrt(r2);
+    double z = sqrt(1 - r2);
+
+    vector3 v;
+    init(&v, x, y, z);
+    return v;
+}
+
 inline void print(const vector3 v){
     printf("%lf %lf %lf\n", v.e[0], v.e[1], v.e[2]);
 }

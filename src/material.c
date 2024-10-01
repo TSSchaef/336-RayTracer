@@ -1,5 +1,7 @@
 #include "material.h"
+#include "onb.h"
 #include "util.h"
+#include "vector3.h"
 
 color non_emitting(const material *m, double u, double v, point3 p){
     color black;
@@ -30,24 +32,32 @@ void copy_material(material *m, material to_copy){
     m->fuzz = to_copy.fuzz;
     m->scatter_func = to_copy.scatter_func;
     m->emit = to_copy.emit;
+    m->pdf = to_copy.pdf;
     copy_texture(&(m->tex), to_copy.tex);
 }
 
 bool lambertian_scatter(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out){
-
-    vector3 dir = random_unit_vector();
-    add_vector(&dir, rec->normal);
-    
-    if(near_zero(dir)){
-        copy(&dir, rec->normal);
-    }
+        struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
+    onb uvw;
+    init_axis(&uvw, rec->normal);
+    vector3 dir = transform(uvw, random_cosine_direction());
+    unit_vector(&dir);
 
     ray r;
     init_ray(&r, rec->p, dir);
     copy_ray(ray_out, r);
     copy(attenuation, (*(rec->mat.tex.value))(&(rec->mat.tex), rec->u, rec->v, rec->p));
+    scale(&dir, 1 / PI);
+    *pdf = dot(uvw.axis[2], dir);
     return true;
+}
+
+double lambertian_pdf(const ray r_in, const hit_record rec, const ray r_out){
+    vector3 temp;
+    copy(&temp, r_out.dir);
+    unit_vector(&temp);
+    double cos_theta = dot(rec.normal, temp);
+    return cos_theta < 0 ? 0 : cos_theta / PI;
 }
 
 void init_lambertian(material *m, color a){
@@ -55,6 +65,7 @@ void init_lambertian(material *m, color a){
     m->fuzz = 0;
     m->scatter_func = &lambertian_scatter;
     m->emit = &non_emitting;
+    m->pdf = &lambertian_pdf;
     texture t;
     init_solid_tex(&t, a);
     copy_texture(&(m->tex), t);
@@ -65,14 +76,20 @@ void init_lambertian_tex(material *m, texture t){
     m->fuzz = 0;
     m->scatter_func = &lambertian_scatter;
     m->emit = &non_emitting;
+    m->pdf = &lambertian_pdf;
     copy_texture(&(m->tex), t);
 }
 
 bool isotropic_scatter(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out){
+        struct hit_record *rec, color *attenuation, ray *ray_out, double* pdf){
     init_ray(ray_out, rec->p, random_unit_vector());  
     copy(attenuation, (*(rec->mat.tex.value))(&(rec->mat.tex), rec->u, rec->v, rec->p));
+    *pdf = 1 / (4 * PI);
     return true;
+}
+
+double isotropic_pdf(const ray r_in, const hit_record rec, const ray r_out){
+    return 1 / (4 * PI);
 }
 
 void init_isotropic(material *m, color a){
@@ -80,6 +97,7 @@ void init_isotropic(material *m, color a){
     m->fuzz = 0;
     m->scatter_func = &isotropic_scatter;
     m->emit = &non_emitting;
+    m->pdf = &isotropic_pdf;
     texture t;
     init_solid_tex(&t, a);
     copy_texture(&(m->tex), t);
@@ -94,7 +112,7 @@ void init_isotropic_tex(material *m, texture t){
 }
 
 bool metal_scatter(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out){
+        struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
     vector3 reflection = reflect(ray_in.dir, rec->normal);
 
     unit_vector(&reflection);
@@ -128,7 +146,7 @@ double reflectance(double cosine, double refraction_index) {
 }
 
 bool dielectric_scatter(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out){
+        struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
    //using fuzz as refraction index and albedo as white
     copy(attenuation, rec->mat.albedo);
 
@@ -168,7 +186,7 @@ void init_dielectric(material *m, double f){
 }
 
 bool non_scattering(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out){
+        struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
     return false;
 }
 
