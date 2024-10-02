@@ -5,6 +5,7 @@
 #include "material.h"
 #include "hittable_list.h"
 #include "pthread.h"
+#include "pdf.h"
 #include "stdint.h"
 
 #define SAMPLES_PER_BATCH 50

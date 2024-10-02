@@ -3,7 +3,7 @@
 #include "util.h"
 #include "vector3.h"
 
-color non_emitting(const material *m, double u, double v, point3 p){
+color non_emitting(const material *m, const ray r_in, const hit_record rec, double u, double v, point3 p){
     color black;
     init(&black, 0, 0, 0);
     return black;
@@ -190,7 +190,12 @@ bool non_scattering(ray ray_in,
     return false;
 }
 
-color emit(const material *m, double u, double v, point3 p){
+color emit(const material *m, const ray r_in, const hit_record rec, double u, double v, point3 p){
+    if(!rec.front_face){
+        color black;
+        init(&black, 0, 0, 0);
+        return black;
+    }
     return (*(m->tex.value))(&(m->tex), u, v, p);
 }
 

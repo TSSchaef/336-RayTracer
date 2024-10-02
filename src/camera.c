@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "pdf.h"
 #include "util.h"
 #include "vector3.h"
 #include <pthread.h>
@@ -25,45 +26,19 @@ color ray_color(ray r, int depth, const hittable_list *world, color background){
     ray bounce;
     color attenuation;
     double pdf_value;
-    color color_from_emmision = (*(h.mat.emit))(&(h.mat), h.u, h.v, h.p);
+    color color_from_emmision = (*(h.mat.emit))(&(h.mat), r, h, h.u, h.v, h.p);
 
     if(!(*h.mat.scatter_func)(r, &h, &attenuation, &bounce, &pdf_value)) {
         return color_from_emmision;
     }
-
-
-
-    //hacky test code
     
-    point3 on_light;
-    init(&on_light, rnd_dbl(213, 343), 554, rnd_dbl(227, 332));
-    vector3 to_light;
-    copy(&to_light, h.p);
-    invert(&to_light);
-    add_vector(&to_light, on_light);
+    pdf cosine_pdf;
+    init_cosine_pdf(&cosine_pdf, h.normal);
+    init_ray(&bounce, h.p, cosine_pdf.generate(cosine_pdf)); 
+    pdf_value = cosine_pdf.value(cosine_pdf, bounce.dir);
 
-    double dist_sqr = length_squared(to_light);
-    unit_vector(&to_light);
-
-    if(dot(to_light, h.normal) < 0){
-        return color_from_emmision;
-    }
-
-    double light_area = (343-213) * (332 -227);
-    double light_cos = to_light.e[y] < 0 ? -1 * to_light.e[y] : to_light.e[y];
-    if(light_cos < 0.000001){
-        return color_from_emmision;
-    }
-
-    pdf_value = dist_sqr / (light_cos * light_area);
-    init_ray(&bounce, h.p, to_light);
-
-    //end hackiness
-
-
-    
     double scatter_pdf = h.mat.pdf(r, h, bounce);
-    //pdf_value = scatter_pdf;
+
 
     color color_from_scatter;
     copy(&color_from_scatter, attenuate(attenuation, ray_color(bounce, depth - 1, world, background)));
@@ -192,7 +167,7 @@ void *render_portion(void *context){
             j = *(p->height);
             *(p->height) += 1;
         pthread_mutex_unlock(p->mutex);
-        fprintf(stderr, "\rScanlines remaining: %d        ", p->c->image_height - j);
+        fprintf(stderr, "\rScanlines remaining: %d        ", p->c->image_height + NUM_THREADS - j);
         fflush(stderr);
 
         if(j >= p->c->image_height) break;
