@@ -183,7 +183,15 @@ static inline double linear_to_gamma(double x){
     return 0;
 }
 
-void print_color(const color c, uint8_t pixel[3]){
+void print_color(const color c_in, uint8_t pixel[3]){
+    color c;
+    copy(&c, c_in);
+
+    //Removing any NaN's 
+    if(c.e[r] != c.e[r]) c.e[r] = 0.0;
+    if(c.e[b] != c.e[b]) c.e[b] = 0.0;
+    if(c.e[g] != c.e[g]) c.e[g] = 0.0;
+
     int rbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[r]));
     int gbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[g])); 
     int bbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[b])); 

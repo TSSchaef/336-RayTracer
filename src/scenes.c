@@ -1,4 +1,5 @@
 #include "scenes.h"
+#include "hittable_list.h"
 #include "material.h"
 #include "sphere.h"
 
@@ -488,14 +489,15 @@ void cornell_box(){
     //cube2 = init_cube(p3, p4, white);
 
     rotate r1, r2;
-    init_rotate(&r1, cube1, &hit, cube1->box, 15);
+    init_rotate(&r1, cube1, &hit, &hittable_list_pdf_value, &hittable_list_pdf_generate, cube1->box, 15);
     //init_rotate(&r2, cube2, &hit, cube2->box, -18);
 
     translate t1, t2;
     vector3 o1, o2;
     init(&o1, 265, 0, 295);
     //init(&o2, 130, 0, 65);
-    init_translate(&t1, &r1, &hit_rotate, r1.bbox, o1);
+    //init_translate(&t1, cube1, &hit, &hittable_list_pdf_value, &hittable_list_pdf_generate, cube1->box, o1);
+    init_translate(&t1, &r1, &hit_rotate, &rotate_pdf_value, &rotate_pdf_generate, r1.bbox, o1);
     //init_translate(&t2, &r2, &hit_rotate, r2.bbox, o2);
 
     add_list_no_pdf(&world, &t1, &hit_translate, &get_translate_box);
@@ -518,14 +520,14 @@ void cornell_box(){
     init_list(&priorities);
     add_list(&priorities, &q3, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
     add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
-    //Add pdf_value and pdf_generate to instances so that the cube can be prioritized 
-    //add_list(&priorities, &t1, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+    //Object Instance pdfs not currently working
+    //add_list(&priorities, &t1, &hit_translate, &get_translate_box, &translate_pdf_value, &translate_pdf_generate);
     
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
-    cam.image_width = 600;
-    cam.samples_per_pixel = 1000;//200;
+    cam.image_width = 600;//1200;
+    cam.samples_per_pixel = 1000;//3000;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 40;
@@ -687,12 +689,12 @@ void cornell_smoke(){
 }
 
 void triangle_test(){
-    /*hittable_list world;
+    hittable_list world;
     init_list(&world);
     
     color r, l;
     init(&r, 0.9, 0.9, 0.75);
-    init(&l, 15.0, 15.0, 15.0);
+    init(&l, 100.0, 100.0, 100.0);
 
     material dif_light, mat;
 
@@ -702,10 +704,12 @@ void triangle_test(){
     init_diffuse_light(&dif_light, l);
 
     //mesh *tree = load_mesh("Tree.obj", mat);
-    point3 center;
-    init(&center, 1, 3.5, 0.5);
-    sphere s;
-    init_sphere(&s, center, 0.3, dif_light);
+    point3 center1, center2;
+    init(&center1, 1, 3.5, 0.5);
+    init(&center2, -1, 3.5, 0.5);
+    sphere s1, s2;
+    init_sphere(&s1, center1, 0.5, dif_light);
+    init_sphere(&s2, center2, 0.5, dif_light);
 
     mesh *tree = load_mesh("teapot.obj", mat);
     //mesh *tree = load_mesh("untitled.obj", mat); //needs work
@@ -716,8 +720,15 @@ void triangle_test(){
         return;
     }
 
-    add_list(&world, tree->bvh, &hit_bvh, &get_bvh_box);
-    add_list(&world, &s, &hit_sphere, &get_sphere_box);
+    add_list_no_pdf(&world, tree->bvh, &hit_bvh, &get_bvh_box);
+    add_list_no_pdf(&world, &s1, &hit_sphere, &get_sphere_box);
+    add_list_no_pdf(&world, &s2, &hit_sphere, &get_sphere_box);
+
+
+    hittable_list priorities;
+    init_list(&priorities);
+    add_list(&priorities, &s1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &s2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     
     //initializing camera
     camera cam;
@@ -734,12 +745,12 @@ void triangle_test(){
     init(&f, 0, 4, 5);
     init(&a, 0.3, 0.5, 0);
     init(&v, 0, 1, 0);
-    */ 
+     
     //tree camera
     /*init(&f, 1000, 0, 1000);
     init(&a, 0, 100, 0);
     init(&v, 0, 1, 0);*/
-    /*
+    
     copy(&(cam.lookfrom), f);
     copy(&(cam.lookat), a);
     copy(&(cam.vup), v);
@@ -747,12 +758,13 @@ void triangle_test(){
     cam.defocus_angle = 0;
     cam.focus_dist = 2;
 
-    render(&cam, &world);
+    render(&cam, &world, &priorities);
     
     delete_texture(&(mat.tex));
     delete_texture(&(dif_light.tex));
     delete_mesh(tree);
-    delete_list(&world); */
+    delete_list(&priorities); 
+    delete_list(&world); 
 }
 
 void render_scene(int scene_id){
