@@ -517,7 +517,7 @@ void cornell_box(){
     hittable_list priorities;
     init_list(&priorities);
     add_list(&priorities, &q3, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
-    //add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     //Add pdf_value and pdf_generate to instances so that the cube can be prioritized 
     //add_list(&priorities, &t1, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
     

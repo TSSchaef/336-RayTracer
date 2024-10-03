@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include "util.h"
+#include "onb.h"
 #include "material.h"
 #include "aabb.h"
 

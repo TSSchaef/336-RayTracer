@@ -87,11 +87,11 @@ double sphere_pdf_value(const void *sph, const point3 orig, const vector3 dir){
     invert(&c);
     add_vector(&c, s->center);
     double dist_sqr = length_squared(c);
-    double value = 1.0 - (s->radius * s->radius / dist_sqr);
+    double value = 1.0 - (s->radius * s->radius/ dist_sqr);
     double cos_theta_max = value > 0 ? sqrt(value) : 0;
     double solid_angle = 2 * PI * (1.0 - cos_theta_max);
 
-    return 1.0 / solid_angle;
+    return 1 / solid_angle;
 }
 
 static vector3 generate_to_sphere(double radius, double dist_sqr){
@@ -99,7 +99,7 @@ static vector3 generate_to_sphere(double radius, double dist_sqr){
     double r2 = rnd_double();
     double value = 1.0 - (radius * radius / dist_sqr);
     double z = value > 0 ? sqrt(value) : 0;
-    z = 1 + r2*z;
+    z = 1 + r2*(z - 1);
 
     double phi = 2 * PI * r1;
     double x = cos(phi) * sqrt(1 - (z*z));
