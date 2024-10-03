@@ -6,10 +6,9 @@
 #include "util.h"
 #include "onb.h"
 #include "texture.h"
+#include "hit_record.h"
+#include "pdf.h"
 
-
-struct hit_record;
-struct material;
 typedef bool (*mat_scatter)(ray, struct hit_record *, color *, ray *, double *);
 typedef color (*emitted)(const struct material *, const ray, const struct hit_record, double, double, point3);
 typedef double (*scatter_pdf)(const ray, const struct hit_record, const ray);
@@ -23,19 +22,15 @@ typedef struct material {
     scatter_pdf pdf;
 } material;
 
-typedef struct hit_record{
-    point3 p;
-    vector3 normal;
-    double t;
-    double u;
-    double v;
-    bool front_face;
-    struct material mat;
-} hit_record;
+typedef struct {
+    color attenuation;
+    pdf *pdf_ptr;
+    bool skip_pdf;
+    ray skip_pdf_ray;
+} scatter_record;
 
 color non_emitting(const material *m, const ray r_in, const hit_record rec, double u, double v, point3 p);
 void set_face_normal(hit_record *h, ray r, vector3 outward_normal);
-void copy_hit_record(hit_record *h, hit_record to_copy);
 
 void copy_material(material *m, material to_copy);
 

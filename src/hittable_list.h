@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #include "util.h"
-#include "material.h"
+#include "hit_record.h"
 #include "aabb.h"
 
 #define INIT_SIZE 10

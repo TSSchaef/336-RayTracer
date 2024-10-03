@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "material.h"
 #include "pdf.h"
 #include "util.h"
 #include "vector3.h"
@@ -27,9 +28,9 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
     ray bounce;
     color attenuation;
     double pdf_value;
-    color color_from_emmision = (*(h.mat.emit))(&(h.mat), r, h, h.u, h.v, h.p);
+    color color_from_emmision = (*(h.mat->emit))(h.mat, r, h, h.u, h.v, h.p);
 
-    if(!(*h.mat.scatter_func)(r, &h, &attenuation, &bounce, &pdf_value)) {
+    if(!(*h.mat->scatter_func)(r, &h, &attenuation, &bounce, &pdf_value)) {
         return color_from_emmision;
     }
     
@@ -44,7 +45,7 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
     delete_pdf(&cosine_pdf);
     delete_pdf(&mixture_pdf);
 
-    double scatter_pdf = h.mat.pdf(r, h, bounce);
+    double scatter_pdf = h.mat->pdf(r, h, bounce);
 
 
     color color_from_scatter;

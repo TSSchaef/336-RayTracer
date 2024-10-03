@@ -60,7 +60,7 @@ bool hit_sphere(const void *s, ray r, double ray_tmin, double ray_tmax, hit_reco
     //placing information about ray collision into hit record
     rec->t = root;
     rec->p = at(r, root);
-    copy_material(&(rec->mat), ((sphere*)s)->mat);
+    rec->mat = &(((sphere*)s)->mat);
     vector3 outward_normal;
     copy(&(outward_normal), ((sphere*)s)->center);
     invert(&(outward_normal));

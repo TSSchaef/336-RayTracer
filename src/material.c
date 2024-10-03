@@ -17,16 +17,6 @@ void set_face_normal(hit_record *h, ray r, vector3 outward_normal){
     }
 }
 
-void copy_hit_record(hit_record *h, hit_record to_copy){
-    copy(&(h->p), to_copy.p);
-    copy(&(h->normal), to_copy.normal);
-    h->t = to_copy.t;
-    h->u = to_copy.u;
-    h->v = to_copy.v;
-    h->front_face = to_copy.front_face;
-    copy_material(&(h->mat), to_copy.mat);
-}
-
 void copy_material(material *m, material to_copy){
     copy(&(m->albedo), to_copy.albedo);
     m->fuzz = to_copy.fuzz;
@@ -46,7 +36,7 @@ bool lambertian_scatter(ray ray_in,
     ray r;
     init_ray(&r, rec->p, dir);
     copy_ray(ray_out, r);
-    copy(attenuation, (*(rec->mat.tex.value))(&(rec->mat.tex), rec->u, rec->v, rec->p));
+    copy(attenuation, (*(rec->mat->tex.value))(&(rec->mat->tex), rec->u, rec->v, rec->p));
     scale(&dir, 1 / PI);
     *pdf = dot(uvw.axis[2], dir);
     return true;
@@ -83,7 +73,7 @@ void init_lambertian_tex(material *m, texture t){
 bool isotropic_scatter(ray ray_in, 
         struct hit_record *rec, color *attenuation, ray *ray_out, double* pdf){
     init_ray(ray_out, rec->p, random_unit_vector());  
-    copy(attenuation, (*(rec->mat.tex.value))(&(rec->mat.tex), rec->u, rec->v, rec->p));
+    copy(attenuation, (*(rec->mat->tex.value))(&(rec->mat->tex), rec->u, rec->v, rec->p));
     *pdf = 1 / (4 * PI);
     return true;
 }
@@ -118,13 +108,13 @@ bool metal_scatter(ray ray_in,
     unit_vector(&reflection);
     vector3 rand;
     copy(&rand, random_unit_vector());
-    scale(&rand, rec->mat.fuzz);
+    scale(&rand, rec->mat->fuzz);
     add_vector(&reflection, rand);
 
     ray r;
     init_ray(&r, rec->p, reflection);
     copy_ray(ray_out, r);
-    copy(attenuation, rec->mat.albedo);
+    copy(attenuation, rec->mat->albedo);
     return (dot(r.dir, rec->normal) > 0);
 }
 
@@ -148,9 +138,9 @@ double reflectance(double cosine, double refraction_index) {
 bool dielectric_scatter(ray ray_in, 
         struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
    //using fuzz as refraction index and albedo as white
-    copy(attenuation, rec->mat.albedo);
+    copy(attenuation, rec->mat->albedo);
 
-    double ri = rec->front_face ? (1.0/ rec->mat.fuzz) : rec->mat.fuzz;
+    double ri = rec->front_face ? (1.0/ rec->mat->fuzz) : rec->mat->fuzz;
 
     vector3 unit_dir;
     copy(&unit_dir, ray_in.dir);

@@ -1,4 +1,5 @@
 #include "quad.h"
+#include "material.h"
 #include "vector3.h"
 
 static void set_bbox(quad *q){
@@ -74,7 +75,7 @@ bool hit_quad(const void *q, ray r, double ray_tmin, double ray_tmax, hit_record
 
     rec->t = t;
     copy(&(rec->p), intersection);
-    copy_material(&(rec->mat), qu->mat);
+    rec->mat = &qu->mat;
     set_face_normal(rec, r, qu->normal);
 
     return true;
