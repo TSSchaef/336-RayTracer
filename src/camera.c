@@ -33,11 +33,16 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
         return color_from_emmision;
     }
     
-    pdf hittable_pdf;
+    pdf hittable_pdf, cosine_pdf, mixture_pdf;
     init_hittable_pdf(&hittable_pdf, priorities, h.p);
-    init_ray(&bounce, h.p, hittable_pdf.generate(hittable_pdf)); 
-    pdf_value = hittable_pdf.value(hittable_pdf, bounce.dir);
+    init_cosine_pdf(&cosine_pdf, h.normal);
+    init_mixture_pdf(&mixture_pdf, &hittable_pdf, &cosine_pdf);
+
+    init_ray(&bounce, h.p, mixture_pdf.generate(mixture_pdf)); 
+    pdf_value = mixture_pdf.value(mixture_pdf, bounce.dir);
     delete_pdf(&hittable_pdf);
+    delete_pdf(&cosine_pdf);
+    delete_pdf(&mixture_pdf);
 
     double scatter_pdf = h.mat.pdf(r, h, bounce);
 

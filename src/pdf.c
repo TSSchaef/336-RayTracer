@@ -35,6 +35,20 @@ vector3 hittable_generate(const pdf p){
     return hittable_list_pdf_generate(info->objects, info->origin);
 }
 
+double mixture_value(const pdf p, const vector3 v){
+    mixture_pdf_data *m = (mixture_pdf_data *) p.data;
+    return 0.5 * m->p1->value(*(m->p1), v) + 0.5 * m->p2->value(*(m->p2), v);
+}
+
+vector3 mixture_generate(const pdf p){
+    mixture_pdf_data *m = (mixture_pdf_data *) p.data;
+    if(rnd_double() < 0.5){
+        return m->p1->generate(*(m->p1));
+    } else {
+        return m->p2->generate(*(m->p2));
+    }
+}
+
 void init_sphere_pdf(pdf *p){
     p->value = &sphere_value;
     p->generate = &sphere_generate;
@@ -54,6 +68,14 @@ void init_hittable_pdf(pdf *p, const hittable_list *objs, const point3 orig){
     p->data = malloc(sizeof(hittable_pdf_data));
     ((hittable_pdf_data *)p->data)->objects = objs;
     copy(&((hittable_pdf_data *)p->data)->origin, orig);
+}
+
+void init_mixture_pdf(pdf *p, pdf *p1, pdf *p2){
+    p->value = &mixture_value;
+    p->generate = &mixture_generate;
+    p->data = malloc(sizeof(mixture_pdf_data));
+    ((mixture_pdf_data *)p->data)->p1 = p1;
+    ((mixture_pdf_data *)p->data)->p2 = p2;
 }
 
 void delete_pdf(pdf *p){
