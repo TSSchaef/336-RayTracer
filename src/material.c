@@ -1,5 +1,5 @@
 #include "material.h"
-#include "onb.h"
+#include "pdf.h"
 #include "util.h"
 #include "vector3.h"
 
@@ -27,18 +27,12 @@ void copy_material(material *m, material to_copy){
 }
 
 bool lambertian_scatter(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
-    onb uvw;
-    init_axis(&uvw, rec->normal);
-    vector3 dir = transform(uvw, random_cosine_direction());
-    unit_vector(&dir);
-
-    ray r;
-    init_ray(&r, rec->p, dir);
-    copy_ray(ray_out, r);
-    copy(attenuation, (*(rec->mat->tex.value))(&(rec->mat->tex), rec->u, rec->v, rec->p));
-    scale(&dir, 1 / PI);
-    *pdf = dot(uvw.axis[2], dir);
+        struct hit_record *rec, scatter_record *srec){
+    copy(&(srec->attenuation), (*(rec->mat->tex.value))(&(rec->mat->tex), rec->u, rec->v, rec->p));
+    pdf *cos_pdf = (pdf *) malloc(sizeof(pdf));
+    init_cosine_pdf(cos_pdf, rec->normal);
+    srec->pdf_ptr = cos_pdf;
+    srec->skip_pdf = false;
     return true;
 }
 
@@ -71,10 +65,12 @@ void init_lambertian_tex(material *m, texture t){
 }
 
 bool isotropic_scatter(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out, double* pdf){
-    init_ray(ray_out, rec->p, random_unit_vector());  
-    copy(attenuation, (*(rec->mat->tex.value))(&(rec->mat->tex), rec->u, rec->v, rec->p));
-    *pdf = 1 / (4 * PI);
+        struct hit_record *rec, scatter_record *srec){
+    copy(&(srec->attenuation), (*(rec->mat->tex.value))(&(rec->mat->tex), rec->u, rec->v, rec->p));
+    pdf *sphere_pdf = (pdf *) malloc(sizeof(pdf));
+    init_sphere_pdf(sphere_pdf);
+    srec->pdf_ptr = sphere_pdf;
+    srec->skip_pdf = false;
     return true;
 }
 
@@ -102,7 +98,7 @@ void init_isotropic_tex(material *m, texture t){
 }
 
 bool metal_scatter(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
+        struct hit_record *rec, scatter_record *srec){
     vector3 reflection = reflect(ray_in.dir, rec->normal);
 
     unit_vector(&reflection);
@@ -113,9 +109,12 @@ bool metal_scatter(ray ray_in,
 
     ray r;
     init_ray(&r, rec->p, reflection);
-    copy_ray(ray_out, r);
-    copy(attenuation, rec->mat->albedo);
-    return (dot(r.dir, rec->normal) > 0);
+    copy_ray(&(srec->skip_pdf_ray), r);
+    copy(&(srec->attenuation), rec->mat->albedo);
+    srec->skip_pdf = true;
+    srec->pdf_ptr = NULL;
+    //return (dot(r.dir, rec->normal) > 0);
+    return true;
 }
 
 void init_metal(material *m, color a, double f){
@@ -136,9 +135,11 @@ double reflectance(double cosine, double refraction_index) {
 }
 
 bool dielectric_scatter(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
+        struct hit_record *rec, scatter_record *srec){
    //using fuzz as refraction index and albedo as white
-    copy(attenuation, rec->mat->albedo);
+    copy(&(srec->attenuation), rec->mat->albedo);
+    srec->pdf_ptr = NULL;
+    srec->skip_pdf = true;
 
     double ri = rec->front_face ? (1.0/ rec->mat->fuzz) : rec->mat->fuzz;
 
@@ -161,7 +162,7 @@ bool dielectric_scatter(ray ray_in,
         copy(&direction, refract(unit_dir, rec->normal, ri));
     }
 
-    init_ray(ray_out, rec->p, direction);
+    init_ray(&(srec->skip_pdf_ray), rec->p, direction);
     return true;
 }
 
@@ -176,7 +177,7 @@ void init_dielectric(material *m, double f){
 }
 
 bool non_scattering(ray ray_in, 
-        struct hit_record *rec, color *attenuation, ray *ray_out, double *pdf){
+        struct hit_record *rec, scatter_record *srec){
     return false;
 }
 

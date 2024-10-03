@@ -22,34 +22,41 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
     }
 
     hit_record h;
+    scatter_record s;
 
     if(!hit(world, r, 0.001, DBL_MAX, &h)) return background;
 
-    ray bounce;
-    color attenuation;
     double pdf_value;
     color color_from_emmision = (*(h.mat->emit))(h.mat, r, h, h.u, h.v, h.p);
 
-    if(!(*h.mat->scatter_func)(r, &h, &attenuation, &bounce, &pdf_value)) {
+    if(!(*h.mat->scatter_func)(r, &h, &s)) {
         return color_from_emmision;
     }
-    
-    pdf hittable_pdf, cosine_pdf, mixture_pdf;
-    init_hittable_pdf(&hittable_pdf, priorities, h.p);
-    init_cosine_pdf(&cosine_pdf, h.normal);
-    init_mixture_pdf(&mixture_pdf, &hittable_pdf, &cosine_pdf);
 
+    
+    //skips importance sampling for specular surfaces
+    if(s.skip_pdf){
+        return attenuate(s.attenuation, ray_color(s.skip_pdf_ray, depth - 1, world, priorities, background));
+    }
+
+    //mixing a pdf of important objects and the material's inherent pdf 
+    pdf hittable_pdf, mixture_pdf;
+    init_hittable_pdf(&hittable_pdf, priorities, h.p);
+    init_mixture_pdf(&mixture_pdf, &hittable_pdf, s.pdf_ptr);
+
+    ray bounce;
     init_ray(&bounce, h.p, mixture_pdf.generate(mixture_pdf)); 
     pdf_value = mixture_pdf.value(mixture_pdf, bounce.dir);
     delete_pdf(&hittable_pdf);
-    delete_pdf(&cosine_pdf);
+    delete_pdf(s.pdf_ptr);
     delete_pdf(&mixture_pdf);
+    free(s.pdf_ptr);
 
     double scatter_pdf = h.mat->pdf(r, h, bounce);
 
 
     color color_from_scatter;
-    copy(&color_from_scatter, attenuate(attenuation, ray_color(bounce, depth - 1, world, priorities, background)));
+    copy(&color_from_scatter, attenuate(s.attenuation, ray_color(bounce, depth - 1, world, priorities, background)));
     
     scale(&color_from_scatter, scatter_pdf / pdf_value);
     

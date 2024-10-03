@@ -20,4 +20,7 @@ bool hit_sphere(const void *s, ray r, double ray_tmin, double ray_tmax, hit_reco
 
 aabb get_sphere_box(const void *s);
 
+double sphere_pdf_value(const void *s, const point3 orig, const vector3 dir);
+vector3 sphere_pdf_generate(const void *s, const point3 orig);
+
 #endif

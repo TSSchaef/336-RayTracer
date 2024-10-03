@@ -1,4 +1,6 @@
 #include "scenes.h"
+#include "material.h"
+#include "sphere.h"
 
 void orig_scene() {
     /*hittable_list world;
@@ -418,17 +420,20 @@ void cornell_box(){
     hittable_list world;
     init_list(&world);
     
-    color r, w, g, l;
+    color r, w, g, l, al;
     init(&l, 15.0, 15.0, 15.0);
     init(&w, 0.73, 0.73, 0.73);
     init(&r, 0.65, 0.05, 0.05);
     init(&g, 0.12, 0.45, 0.15);
+    init(&al, 0.8, 0.85, 0.88);
 
-    material dif_light, red, white, green;
+    material dif_light, red, white, green, aluminum, glass;
 
     init_lambertian(&red, r);
     init_lambertian(&white, w);
     init_lambertian(&green, g);
+    init_metal(&aluminum, al, 0.0);
+    init_dielectric(&glass, 1.5);
     init_diffuse_light(&dif_light, l);
 
     quad q1, q2, q3, q4, q5, q6;
@@ -478,22 +483,29 @@ void cornell_box(){
     init(&p4, 165, 165, 165);
     
     hittable_list *cube1, *cube2;
-    cube1 = init_cube(p1, p2, white);
-    cube2 = init_cube(p3, p4, white);
+
+    cube1 = init_cube(p1, p2, aluminum);
+    //cube2 = init_cube(p3, p4, white);
 
     rotate r1, r2;
     init_rotate(&r1, cube1, &hit, cube1->box, 15);
-    init_rotate(&r2, cube2, &hit, cube2->box, -18);
+    //init_rotate(&r2, cube2, &hit, cube2->box, -18);
 
     translate t1, t2;
     vector3 o1, o2;
     init(&o1, 265, 0, 295);
-    init(&o2, 130, 0, 65);
+    //init(&o2, 130, 0, 65);
     init_translate(&t1, &r1, &hit_rotate, r1.bbox, o1);
-    init_translate(&t2, &r2, &hit_rotate, r2.bbox, o2);
+    //init_translate(&t2, &r2, &hit_rotate, r2.bbox, o2);
 
     add_list_no_pdf(&world, &t1, &hit_translate, &get_translate_box);
-    add_list_no_pdf(&world, &t2, &hit_translate, &get_translate_box);
+    //add_list_no_pdf(&world, &t2, &hit_translate, &get_translate_box);
+    
+    point3 center;
+    init(&center, 190, 90, 190);
+    sphere s;
+    init_sphere(&s, center, 90, glass);
+    add_list_no_pdf(&world, &s, &hit_sphere, &get_sphere_box);
     
     bvh_node root;
     init_bvh(&root, &world);
@@ -505,6 +517,9 @@ void cornell_box(){
     hittable_list priorities;
     init_list(&priorities);
     add_list(&priorities, &q3, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+    //add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    //Add pdf_value and pdf_generate to instances so that the cube can be prioritized 
+    //add_list(&priorities, &t1, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
     
     //initializing camera
     camera cam;
@@ -531,9 +546,11 @@ void cornell_box(){
     delete_texture(&(red.tex));
     delete_texture(&(white.tex));
     delete_texture(&(green.tex));
+    delete_texture(&(aluminum.tex));
+    delete_texture(&(glass.tex));
     delete_texture(&(dif_light.tex));
     delete_cube(cube1);
-    delete_cube(cube2);
+    //delete_cube(cube2);
     delete_bvh(&root);
     delete_list(&priorities); 
     delete_list(&world); 
