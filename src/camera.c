@@ -75,6 +75,9 @@ void initialize(camera *c){
     c->image_height = (c->image_height < 1) ? 1 : c->image_height;
     c->focus_dist = (c->focus_dist >= 0) ? c->focus_dist : 1;
 
+    c->sqrt_spb = (int) sqrt(SAMPLES_PER_BATCH);
+    c->recip_sqrt_spb = 1.0 / c->sqrt_spb;
+
     copy(&(c->center), c->lookfrom);
 
     c->vfov = (c->vfov > 0) ? c->vfov : 90;
@@ -142,10 +145,16 @@ point3 defocus_disk_sample(const camera *c){
     return p;
 }
 
-ray get_ray(const camera *c, int i, int j){
+vector3 sample_square_stratified(const camera *c, int s_i, int s_j){
+    point3 pixel_sample;
+    init(&pixel_sample, ((s_i + rnd_double()) * c->recip_sqrt_spb) - 0.5, ((s_j + rnd_double()) * c->recip_sqrt_spb) - 0.5, 0);
+    return pixel_sample;
+}
+
+ray get_ray(const camera *c, int i, int j, int s_i, int s_j){
     //sample square
     point3 pixel_sample;
-    init(&pixel_sample, rnd_double() - 0.5, rnd_double() - 0.5, 0);
+    copy(&pixel_sample, sample_square_stratified(c, s_i, s_j));
 
     point3 u_offset, v_offset;
 
@@ -174,7 +183,7 @@ void *render_portion(void *context){
     render_info *p = (render_info *) context;
     color pixel_color;
     init(&pixel_color, 0, 0, 0);
-    int i, j, sample;
+    int i, j, s_i, s_j, sample;
     double illum, illumSum, illumSqrSum, sigSqr;
     
     while(1){
@@ -191,25 +200,32 @@ void *render_portion(void *context){
         for(i = 0; i < p->c->image_width; i++){
             illumSum = 0;
             illumSqrSum = 0;
-            for(sample = 1; sample <= p->c->samples_per_pixel; sample++){
-                ray r = get_ray(p->c, i, j);
+            for(sample = 1; sample <= p->c->samples_per_pixel; ){
+                
+                //doing batch of stratified sampling
+                //checking for pixel illuminance convergence after each batch
+                for(s_j = 0; s_j < p->c->sqrt_spb; s_j++){
+                    for(s_i = 0; s_i < p->c->sqrt_spb; s_i++){
+                        ray r = get_ray(p->c, i, j, s_i, s_j);
 
-                color sampleColor;
-                copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->priorities, p->c->background));
-                illum = illuminance(sampleColor);
-                illumSum += illum;
-                illumSqrSum += illum * illum;
+                        color sampleColor;
+                        copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->priorities, p->c->background));
+                        illum = illuminance(sampleColor);
+                        illumSum += illum;
+                        illumSqrSum += illum * illum;
 
-                add_vector(&pixel_color, sampleColor);
+                        add_vector(&pixel_color, sampleColor);
+
+                        sample++;
+                    }
+                }
 
                 //checking if pixel illuminance has converged and the average
                 //sampled illuminance is within a 95% confidence interval.
                 //EQ is reqrranged to avoid divisions and square roots
                 //Stopping sampling early if so.
-                if(sample % SAMPLES_PER_BATCH == 0){
-                    sigSqr = ((illumSqrSum * sample) - (illumSum * illumSum)) / ((sample * sample) - sample);
-                    if(Z_95_VALUE_SQR * sample * sigSqr <= MAX_TOLERANCE_SQR * illumSum * illumSum) break;
-                }
+                sigSqr = ((illumSqrSum * sample) - (illumSum * illumSum)) / ((sample * sample) - sample);
+                if(Z_95_VALUE_SQR * sample * sigSqr <= MAX_TOLERANCE_SQR * illumSum * illumSum) break;
             }
 
             scale(&pixel_color, 1.0 / sample);
