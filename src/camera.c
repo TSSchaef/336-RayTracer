@@ -7,12 +7,13 @@
 typedef struct {
     const camera *c;
     const hittable_list *world;
+    const hittable_list *priorities;
     uint8_t *raster;
     int *height;
     pthread_mutex_t *mutex;
 } render_info;
 
-color ray_color(ray r, int depth, const hittable_list *world, color background){
+color ray_color(ray r, int depth, const hittable_list *world, const hittable_list *priorities, color background){
     if(depth <= 0){
         color black;
         init(&black, 0, 0, 0);
@@ -32,16 +33,17 @@ color ray_color(ray r, int depth, const hittable_list *world, color background){
         return color_from_emmision;
     }
     
-    pdf cosine_pdf;
-    init_cosine_pdf(&cosine_pdf, h.normal);
-    init_ray(&bounce, h.p, cosine_pdf.generate(cosine_pdf)); 
-    pdf_value = cosine_pdf.value(cosine_pdf, bounce.dir);
+    pdf hittable_pdf;
+    init_hittable_pdf(&hittable_pdf, priorities, h.p);
+    init_ray(&bounce, h.p, hittable_pdf.generate(hittable_pdf)); 
+    pdf_value = hittable_pdf.value(hittable_pdf, bounce.dir);
+    delete_pdf(&hittable_pdf);
 
     double scatter_pdf = h.mat.pdf(r, h, bounce);
 
 
     color color_from_scatter;
-    copy(&color_from_scatter, attenuate(attenuation, ray_color(bounce, depth - 1, world, background)));
+    copy(&color_from_scatter, attenuate(attenuation, ray_color(bounce, depth - 1, world, priorities, background)));
     
     scale(&color_from_scatter, scatter_pdf / pdf_value);
     
@@ -180,7 +182,7 @@ void *render_portion(void *context){
                 ray r = get_ray(p->c, i, j);
 
                 color sampleColor;
-                copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->c->background));
+                copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->priorities, p->c->background));
                 illum = illuminance(sampleColor);
                 illumSum += illum;
                 illumSqrSum += illum * illum;
@@ -207,7 +209,7 @@ void *render_portion(void *context){
     return NULL;
 }
 
-void render(camera *c, const hittable_list *world){
+void render(camera *c, const hittable_list *world, const hittable_list *priorities){
     initialize(c);
     
     FILE *img = fopen("image.ppm", "wb");
@@ -227,6 +229,7 @@ void render(camera *c, const hittable_list *world){
         contexts[i] = (render_info *) malloc(sizeof(render_info));
         contexts[i]->c = c;
         contexts[i]->world = world;
+        contexts[i]->priorities = priorities;
         contexts[i]->height = &height;
         contexts[i]->raster = raster;
         contexts[i]->mutex = &mutex;

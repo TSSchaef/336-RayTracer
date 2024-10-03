@@ -14,6 +14,7 @@
 #define PI 3.1415926535897932385
 #define DEG_TO_RAD(deg) ((deg * PI) / 180.0)
 
+int rnd_int(int min, int max);
 double rnd_double();
 double rnd_dbl(double min, double max);
 

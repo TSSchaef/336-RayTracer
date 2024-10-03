@@ -6,7 +6,7 @@ void init_list(hittable_list *l){
     l->list = (hittable_node **) malloc(INIT_SIZE * sizeof(hittable_node *));
 }
 
-void add_list(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get){
+void add_list_no_pdf(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get){
     if(l->size == l->max_size){
         l->max_size *= 2;
         hittable_node **temp = (hittable_node **) malloc(l->max_size * sizeof(hittable_node *));
@@ -26,6 +26,34 @@ void add_list(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get){
         add_boxes(&(l->box), (*get)(h) );
     }
     currNode->get_box = get;
+    l->list[l->size] = currNode;
+    l->size++;
+}
+
+void add_list(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get, 
+        hittable_pdf_value v, hittable_pdf_generate g){
+
+    if(l->size == l->max_size){
+        l->max_size *= 2;
+        hittable_node **temp = (hittable_node **) malloc(l->max_size * sizeof(hittable_node *));
+        int i;
+        for(i = 0; i < l->size; i++){
+            temp[i] = l->list[i];
+        }
+        free(l->list);
+        l->list = temp;
+    }
+    hittable_node *currNode = (hittable_node *) malloc(sizeof(hittable_node));
+    currNode->hittable = h;
+    currNode->is_hit = f;
+    if(l->size == 0){
+        copy_box(&(l->box), (*get)(h) );
+    } else {
+        add_boxes(&(l->box), (*get)(h) );
+    }
+    currNode->get_box = get;
+    currNode->pdf_value = v;
+    currNode->pdf_generate = g;
     l->list[l->size] = currNode;
     l->size++;
 }
@@ -111,4 +139,25 @@ aabb get_list_box_interval(hittable_list *l, int start, int end){
         add_boxes(&box, (*(l->list[i]->get_box))(l->list[i]->hittable));
     }
     return box;
+}
+
+double hittable_list_pdf_value(const void *l, const point3 orig, const vector3 dir){
+    hittable_list *li = (hittable_list *)l;
+    double weight = 1.0 / li->size;
+    double sum = 0.0;
+
+    int i;
+    for(i = 0; i < li->size; i++){
+        hittable_node *node = index_list(li, i);
+        sum += weight * node->pdf_value(node->hittable, orig, dir);
+    }
+
+    return sum;
+}
+
+vector3 hittable_list_pdf_generate(const void *list, const point3 orig){
+    hittable_list *li = (hittable_list *)list;
+    hittable_node *rnd_node = index_list(li, rnd_int(0, li->size - 1));
+
+    return rnd_node->pdf_generate(rnd_node->hittable, orig);
 }

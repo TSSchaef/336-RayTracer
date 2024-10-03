@@ -39,6 +39,6 @@ typedef struct {
 } camera;
 
 void initialize(camera *c);
-void render(camera *c, const hittable_list *world);
+void render(camera *c, const hittable_list *world, const hittable_list *priorities);
 
 #endif

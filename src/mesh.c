@@ -119,7 +119,7 @@ mesh *load_mesh(const char* filename, material mat){
         //no normal for triangle in obj file
         triangle *t = (triangle *) malloc(sizeof(triangle));
         init_triangle(t, points[f0], points[f1], points[f2], mat);
-        add_list(m->list, t, &hit_triangle, &get_triangle_box);
+        add_list_no_pdf(m->list, t, &hit_triangle, &get_triangle_box);
     }
 
     free(points);

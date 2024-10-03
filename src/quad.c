@@ -1,4 +1,5 @@
 #include "quad.h"
+#include "vector3.h"
 
 static void set_bbox(quad *q){
     point3 temp;
@@ -31,6 +32,8 @@ void init_quad(quad *q, point3 Qc, vector3 uc, vector3 vc, material matc){
 
     copy(&(q->w), q->normal);
     scale(&(q->w), 1.0 / dot(q->normal, q->normal));
+   
+    q->area = length(q->normal);
     
     unit_vector(&(q->normal));
 
@@ -81,6 +84,40 @@ aabb get_quad_box(const void *s){
     return ((quad *)s)->bbox;
 }
 
+double quad_pdf_value(const void *q, const point3 orig, const vector3 dir){
+    hit_record rec;
+    ray r;
+    init_ray(&r, orig, dir);
+    if(!hit_quad(q, r, 0.0001, DBL_MAX, &rec)){
+        return 0;
+    }
+
+    double dist_sqr = rec.t * rec.t * length_squared(dir);
+    double cosine = dot(dir, rec.normal) / length(dir);
+    cosine = cosine < 0 ? -1 * cosine : cosine;
+
+    return dist_sqr / (cosine * ((quad *)q)->area);
+}
+
+vector3 quad_pdf_generate(const void *q, const point3 orig){
+    quad *qu = (quad *)q;
+    point3 temp, temp_v;
+    copy(&temp, qu->u);
+    copy(&temp_v, qu->v);
+
+    scale(&temp, rnd_double()); 
+    scale(&temp_v, rnd_double()); 
+
+    add_vector(&temp, temp_v);
+    add_vector(&temp, qu->Q);
+
+    copy(&temp_v, orig);
+    invert(&temp_v);
+
+    add_vector(&temp, temp_v);
+    return temp;
+}
+
 
 hittable_list *init_cube(point3 a, point3 b, material mat){
   hittable_list *sides;
@@ -123,12 +160,12 @@ hittable_list *init_cube(point3 a, point3 b, material mat){
   init_quad(top, t, dx, ndz, mat);
   init_quad(bottom, bo, dx, dz, mat);
 
-  add_list(sides, front, &hit_quad, &get_quad_box);
-  add_list(sides, right, &hit_quad, &get_quad_box);
-  add_list(sides, back, &hit_quad, &get_quad_box);
-  add_list(sides, left, &hit_quad, &get_quad_box);
-  add_list(sides, top, &hit_quad, &get_quad_box);
-  add_list(sides, bottom, &hit_quad, &get_quad_box);
+  add_list(sides, front, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, right, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, back, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, left, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, top, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, bottom, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
 
   return sides;
 }

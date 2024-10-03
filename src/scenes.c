@@ -1,7 +1,7 @@
 #include "scenes.h"
 
 void orig_scene() {
-    hittable_list world;
+    /*hittable_list world;
     init_list(&world);
 
     point3 center1;
@@ -114,11 +114,11 @@ void orig_scene() {
     delete_texture(&(m4.tex));
     delete_texture(&(m5.tex));
     delete_texture(&(m6.tex));
-    delete_list(&world); 
+    delete_list(&world); */
 }
 
 void checkered_spheres(){
-    hittable_list world;
+    /*hittable_list world;
     init_list(&world);
 
     texture t2;
@@ -170,11 +170,11 @@ void checkered_spheres(){
     delete_texture(&(((checker*)t2.pattern)->even));
     delete_texture(&(((checker*)t2.pattern)->odd));
     delete_texture(&t2);
-    delete_list(&world); 
+    delete_list(&world); */
 }
 
 void earth(){
-    hittable_list world;
+    /*hittable_list world;
     init_list(&world);
 
     texture earth_tex;
@@ -212,11 +212,11 @@ void earth(){
     render(&cam, &world);
     
     delete_image_tex(&earth_tex);
-    delete_list(&world); 
+    delete_list(&world); */
 }
 
 void perlin_spheres(){
-    hittable_list world;
+    /*hittable_list world;
     init_list(&world);
 
     texture p_tex;
@@ -261,11 +261,11 @@ void perlin_spheres(){
     render(&cam, &world);
     
     delete_texture(&p_tex);
-    delete_list(&world); 
+    delete_list(&world); */
 }
 
 void quads(){
-    hittable_list world;
+    /*hittable_list world;
     init_list(&world);
     
     color red, green, blue, orange, teal;
@@ -347,11 +347,11 @@ void quads(){
     delete_texture(&(right_blue.tex));
     delete_texture(&(upper_orange.tex));
     delete_texture(&(lower_teal.tex));
-    delete_list(&world); 
+    delete_list(&world); */
 }
 
 void simple_light(){
-    hittable_list world;
+    /*hittable_list world;
     init_list(&world);
     
     color light;
@@ -411,7 +411,7 @@ void simple_light(){
     
     delete_texture(&perl_tex);
     delete_texture(&(dif_light.tex));
-    delete_list(&world); 
+    delete_list(&world); */
 }
 
 void cornell_box(){
@@ -464,12 +464,12 @@ void cornell_box(){
     init_quad(&q5, q5Q, q5u, q5v, white);
     init_quad(&q6, q6Q, q6u, q6v, white);
 
-    add_list(&world, &q1, &hit_quad, &get_quad_box);
-    add_list(&world, &q2, &hit_quad, &get_quad_box);
-    add_list(&world, &q3, &hit_quad, &get_quad_box);
-    add_list(&world, &q4, &hit_quad, &get_quad_box);
-    add_list(&world, &q5, &hit_quad, &get_quad_box);
-    add_list(&world, &q6, &hit_quad, &get_quad_box);
+    add_list_no_pdf(&world, &q1, &hit_quad, &get_quad_box);
+    add_list_no_pdf(&world, &q2, &hit_quad, &get_quad_box);
+    add_list_no_pdf(&world, &q3, &hit_quad, &get_quad_box);
+    add_list_no_pdf(&world, &q4, &hit_quad, &get_quad_box);
+    add_list_no_pdf(&world, &q5, &hit_quad, &get_quad_box);
+    add_list_no_pdf(&world, &q6, &hit_quad, &get_quad_box);
 
     point3 p1, p2, p3, p4;
     init(&p1, 0, 0, 0);
@@ -492,21 +492,25 @@ void cornell_box(){
     init_translate(&t1, &r1, &hit_rotate, r1.bbox, o1);
     init_translate(&t2, &r2, &hit_rotate, r2.bbox, o2);
 
-    add_list(&world, &t1, &hit_translate, &get_translate_box);
-    add_list(&world, &t2, &hit_translate, &get_translate_box);
+    add_list_no_pdf(&world, &t1, &hit_translate, &get_translate_box);
+    add_list_no_pdf(&world, &t2, &hit_translate, &get_translate_box);
     
     bvh_node root;
     init_bvh(&root, &world);
 
     delete_list(&world);
     init_list(&world);
-    add_list(&world, &root, &hit_bvh, &get_bvh_box);
+    add_list_no_pdf(&world, &root, &hit_bvh, &get_bvh_box);
+
+    hittable_list priorities;
+    init_list(&priorities);
+    add_list(&priorities, &q3, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
     
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 600;
-    cam.samples_per_pixel = 1000;//200;
+    cam.samples_per_pixel = 10;//00;//200;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 40;
@@ -522,7 +526,7 @@ void cornell_box(){
     cam.defocus_angle = 0;
     cam.focus_dist = 2;
 
-    render(&cam, &world);
+    render(&cam, &world, &priorities);
     
     delete_texture(&(red.tex));
     delete_texture(&(white.tex));
@@ -531,11 +535,12 @@ void cornell_box(){
     delete_cube(cube1);
     delete_cube(cube2);
     delete_bvh(&root);
+    delete_list(&priorities); 
     delete_list(&world); 
 }
 
 void cornell_smoke(){
-    hittable_list world;
+/*    hittable_list world;
     init_list(&world);
     
     color r, w, g, l;
@@ -661,11 +666,11 @@ void cornell_smoke(){
     delete_cube(cube1);
     delete_cube(cube2);
     delete_bvh(&root);
-    delete_list(&world); 
+    delete_list(&world);*/ 
 }
 
 void triangle_test(){
-    hittable_list world;
+    /*hittable_list world;
     init_list(&world);
     
     color r, l;
@@ -712,12 +717,12 @@ void triangle_test(){
     init(&f, 0, 4, 5);
     init(&a, 0.3, 0.5, 0);
     init(&v, 0, 1, 0);
-    
+    */ 
     //tree camera
     /*init(&f, 1000, 0, 1000);
     init(&a, 0, 100, 0);
     init(&v, 0, 1, 0);*/
-
+    /*
     copy(&(cam.lookfrom), f);
     copy(&(cam.lookat), a);
     copy(&(cam.vup), v);
@@ -730,7 +735,7 @@ void triangle_test(){
     delete_texture(&(mat.tex));
     delete_texture(&(dif_light.tex));
     delete_mesh(tree);
-    delete_list(&world); 
+    delete_list(&world); */
 }
 
 void render_scene(int scene_id){
