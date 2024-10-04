@@ -67,7 +67,7 @@ void delete_list(hittable_list *l){
     l->size = 0;
 }
 
-hittable_node *index_list(hittable_list *l, int i){
+hittable_node *index_list(const hittable_list *l, int i){
     if(i >= l->size) return NULL;
     return l->list[i];
 }
@@ -142,22 +142,22 @@ aabb get_list_box_interval(hittable_list *l, int start, int end){
 }
 
 double hittable_list_pdf_value(const void *l, const point3 orig, const vector3 dir){
-    hittable_list *li = (hittable_list *)l;
-    double weight = 1.0 / li->size;
+    const hittable_list *li = (hittable_list *)l;
+    const double weight = 1.0 / li->size;
     double sum = 0.0;
 
     int i;
     for(i = 0; i < li->size; i++){
-        hittable_node *node = index_list(li, i);
-        sum += weight * node->pdf_value(node->hittable, orig, dir);
+        const hittable_node *node = index_list(li, i);
+        sum += weight * (*(node->pdf_value))(node->hittable, orig, dir);
     }
 
     return sum;
 }
 
 vector3 hittable_list_pdf_generate(const void *list, const point3 orig){
-    hittable_list *li = (hittable_list *)list;
-    hittable_node *rnd_node = index_list(li, rnd_int(0, li->size - 1));
+    const hittable_list *li = (hittable_list *)list;
+    const hittable_node *rnd_node = index_list(li, rnd_int(0, li->size - 1));
 
-    return rnd_node->pdf_generate(rnd_node->hittable, orig);
+    return (*(rnd_node->pdf_generate))(rnd_node->hittable, orig);
 }

@@ -37,7 +37,7 @@ void add_list(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get,
         hittable_pdf_value v, hittable_pdf_generate g);
 void add_list_no_pdf(hittable_list *l, void *h, fptr_is_hit f, fptr_get_box get);
 
-hittable_node *index_list(hittable_list *l, int i);
+hittable_node *index_list(const hittable_list *l, int i);
 void delete_list(hittable_list *l);
 bool hit(const void *l, ray r, double ray_tmin, 
         double ray_tmax, hit_record *rec);

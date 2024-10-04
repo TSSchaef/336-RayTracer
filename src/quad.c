@@ -97,11 +97,11 @@ double quad_pdf_value(const void *q, const point3 orig, const vector3 dir){
     double cosine = dot(dir, rec.normal) / length(dir);
     cosine = cosine < 0 ? -1 * cosine : cosine;
 
-    return dist_sqr / (cosine * ((quad *)q)->area);
+    return dist_sqr / (cosine * ((const quad *)q)->area);
 }
 
 vector3 quad_pdf_generate(const void *q, const point3 orig){
-    quad *qu = (quad *)q;
+    const quad *qu = (quad *)q;
     point3 temp, temp_v;
     copy(&temp, qu->u);
     copy(&temp_v, qu->v);

@@ -75,7 +75,7 @@ bool hit_sphere(const void *s, ray r, double ray_tmin, double ray_tmax, hit_reco
 
 double sphere_pdf_value(const void *sph, const point3 orig, const vector3 dir){
     hit_record h;
-    sphere *s = (sphere *)sph;
+    const sphere *s = (sphere *)sph;
     ray r;
     init_ray(&r, orig, dir);
     if(!hit_sphere(sph, r, 0.001, DBL_MAX, &h)){
@@ -111,7 +111,7 @@ static vector3 generate_to_sphere(double radius, double dist_sqr){
 }
 
 vector3 sphere_pdf_generate(const void *sph, const point3 orig){
-    sphere *s = (sphere *)sph;
+    const sphere *s = (sphere *)sph;
 
     vector3 c;
     copy(&c, orig);

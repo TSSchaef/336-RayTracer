@@ -38,7 +38,7 @@ aabb get_translate_box(const void *s){
 }
 
 double translate_pdf_value(const void *s, const point3 orig, const vector3 dir){
-    translate *t = ((translate *)s);
+    const translate *t = ((translate *)s);
     point3 p;
     copy(&p, t->offset);
     invert(&p);
@@ -47,7 +47,7 @@ double translate_pdf_value(const void *s, const point3 orig, const vector3 dir){
 }
 
 vector3 translate_pdf_generate(const void *s, const point3 orig){
-    translate *t = ((translate *)s);
+    const translate *t = ((translate *)s);
     point3 p;
     copy(&p, t->offset);
     invert(&p);
@@ -100,7 +100,7 @@ void init_rotate(rotate *r, void *hittable, fptr_is_hit hit, hittable_pdf_value 
 }
 
 double rotate_pdf_value(const void *s, const point3 orig, const vector3 dir){
-    rotate *ro = ((rotate *)s);
+    const rotate *ro = ((rotate *)s);
     point3 origin;
     init(&origin, ro->cos_theta * orig.e[x] - ro->sin_theta * orig.e[z],
                 orig.e[y],
@@ -115,7 +115,7 @@ double rotate_pdf_value(const void *s, const point3 orig, const vector3 dir){
 }
 
 vector3 rotate_pdf_generate(const void *s, const point3 orig){
-    rotate *ro = ((rotate *)s);
+    const rotate *ro = ((rotate *)s);
     point3 origin;
     init(&origin, ro->cos_theta * orig.e[x] - ro->sin_theta * orig.e[z],
                 orig.e[y],
