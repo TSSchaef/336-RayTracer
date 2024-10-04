@@ -20,6 +20,7 @@ This ray tracer was originally developed for CS336 (Intro to Computer Graphics).
 The ray tracer currently implements:
 * Parallelization on CPU's
 * Loading of object files as Triangle Meshes
+* Adaptive Sampling
 * Object Instancing
 * Loading images as textures
 * Perlin Noise Texturing
@@ -41,7 +42,6 @@ Current plans for the project include adding features for:
 * Optimizing Triangle Meshes
 * Optimizing the BVH
 * Adding Importance Sampling
-* Adding Adaptive Sampling
 * Extending Object Instancing
 * Adding a BRDF
 
