@@ -11,7 +11,8 @@ typedef struct {
     const hittable_list *priorities;
     uint8_t *raster;
     int *height;
-    pthread_mutex_t *mutex;
+    pthread_mutex_t *mutex1;
+    pthread_mutex_t *mutex2;
 } render_info;
 
 color ray_color(ray r, int depth, const hittable_list *world, const hittable_list *priorities, color background){
@@ -187,10 +188,10 @@ void *render_portion(void *context){
     double illum, illumSum, illumSqrSum, sigSqr;
     
     while(1){
-        pthread_mutex_lock(p->mutex); 
+        pthread_mutex_lock(p->mutex1); 
             j = *(p->height);
             *(p->height) += 1;
-        pthread_mutex_unlock(p->mutex);
+        pthread_mutex_unlock(p->mutex1);
         fprintf(stderr, "\rScanlines remaining: %d        ", p->c->image_height + NUM_THREADS - j);
         fflush(stderr);
 
@@ -230,7 +231,9 @@ void *render_portion(void *context){
 
             scale(&pixel_color, 1.0 / sample);
 
+            pthread_mutex_lock(p->mutex2); 
             print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
+            pthread_mutex_unlock(p->mutex2); 
         }
     }
 
@@ -251,7 +254,8 @@ void render(camera *c, const hittable_list *world, const hittable_list *prioriti
     uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 3 * sizeof(uint8_t));
 
     int i, j, height = 0;
-    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
     render_info *contexts[NUM_THREADS];
     pthread_t threads[NUM_THREADS];
     for(i = 0; i < NUM_THREADS; i++){
@@ -261,7 +265,8 @@ void render(camera *c, const hittable_list *world, const hittable_list *prioriti
         contexts[i]->priorities = priorities;
         contexts[i]->height = &height;
         contexts[i]->raster = raster;
-        contexts[i]->mutex = &mutex;
+        contexts[i]->mutex1 = &mutex1;
+        contexts[i]->mutex2 = &mutex2;
 
         pthread_create(&threads[i], NULL, &render_portion, contexts[i]);
     }

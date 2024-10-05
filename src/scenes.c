@@ -480,8 +480,9 @@ void cornell_box(){
     point3 p1, p2, p3, p4;
     init(&p1, 0, 0, 0);
     init(&p2, 165, 330, 165);
-    init(&p3, 0, 0, 0);
-    init(&p4, 165, 165, 165);
+
+    //init(&p3, 0, 0, 0);
+    //init(&p4, 165, 165, 165);
     
     hittable_list *cube1, *cube2;
 
@@ -489,7 +490,7 @@ void cornell_box(){
     //cube2 = init_cube(p3, p4, white);
 
     rotate r1, r2;
-    init_rotate(&r1, cube1, &hit, &hittable_list_pdf_value, &hittable_list_pdf_generate, cube1->box, 15);
+    init_rotate(&r1, cube1, &hit, &cube_pdf_value, &cube_pdf_generate, cube1->box, 15);
     //init_rotate(&r2, cube2, &hit, cube2->box, -18);
 
     translate t1, t2;
@@ -520,8 +521,9 @@ void cornell_box(){
     init_list(&priorities);
     add_list(&priorities, &q3, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
     add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    //add_list(&priorities, cube1, &hit, &get_list_box, &cube_pdf_value, &cube_pdf_generate);
     //Object Instance pdfs not currently working
-    //add_list(&priorities, &t1, &hit_translate, &get_translate_box, &translate_pdf_value, &translate_pdf_generate);
+    add_list(&priorities, &t1, &hit_translate, &get_translate_box, &translate_pdf_value, &translate_pdf_generate);
     
     //initializing camera
     camera cam;

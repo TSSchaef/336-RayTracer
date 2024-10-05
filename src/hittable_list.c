@@ -143,6 +143,11 @@ aabb get_list_box_interval(hittable_list *l, int start, int end){
 
 double hittable_list_pdf_value(const void *l, const point3 orig, const vector3 dir){
     const hittable_list *li = (hittable_list *)l;
+
+    if(li->size <= 0){
+        return 0;
+    }
+
     const double weight = 1.0 / li->size;
     double sum = 0.0;
 

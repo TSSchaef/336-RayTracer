@@ -27,6 +27,9 @@ double quad_pdf_value(const void *q, const point3 orig, const vector3 dir);
 vector3 quad_pdf_generate(const void *q, const point3 orig);
 
 hittable_list *init_cube(point3 a, point3 b, material mat);
+
+double cube_pdf_value(const void *l, const point3 orig, const vector3 dir);
+vector3 cube_pdf_generate(const void *list, const point3 orig);
 void delete_cube(hittable_list *l);
 
 #endif
