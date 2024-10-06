@@ -27,8 +27,7 @@ void orig_scene() {
     init(&center2, 0, -100.5, -1);
     sphere s2;
     material m2;
-    init_lambertian_tex(&m2, t2);
-    //color c2;
+    init_lambertian_tex(&m2, t2); //color c2;
     //init(&c2, 0.9, 0.2, 0.5);
     //init_lambertian(&m2, c2);
     init_sphere(&s2, center2, 100, m2);
@@ -486,6 +485,7 @@ void cornell_box(){
     
     hittable_list *cube1, *cube2;
 
+    //cube1 = init_cube(p1, p2, white);
     cube1 = init_cube(p1, p2, aluminum);
     //cube2 = init_cube(p3, p4, white);
 
@@ -507,7 +507,8 @@ void cornell_box(){
     point3 center;
     init(&center, 190, 90, 190);
     sphere s;
-    init_sphere(&s, center, 90, glass);
+    init_sphere(&s, center, 90, white);
+    //init_sphere(&s, center, 90, glass);
     add_list_no_pdf(&world, &s, &hit_sphere, &get_sphere_box);
     
     bvh_node root;
@@ -520,16 +521,16 @@ void cornell_box(){
     hittable_list priorities;
     init_list(&priorities);
     add_list(&priorities, &q3, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
-    add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    //add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     //add_list(&priorities, cube1, &hit, &get_list_box, &cube_pdf_value, &cube_pdf_generate);
     //Object Instance pdfs not currently working
-    add_list(&priorities, &t1, &hit_translate, &get_translate_box, &translate_pdf_value, &translate_pdf_generate);
+    //add_list(&priorities, &t1, &hit_translate, &get_translate_box, &translate_pdf_value, &translate_pdf_generate);
     
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
-    cam.image_width = 600;//1200;
-    cam.samples_per_pixel = 1000;//3000;
+    cam.image_width = 1200;
+    cam.samples_per_pixel = 3;//000;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 40;
