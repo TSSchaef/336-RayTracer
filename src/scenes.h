@@ -14,7 +14,7 @@
 #include "constant_medium.h"
 #include "util.h"
 
-#define NUM_SCENES 9
+#define NUM_SCENES 2
 
 void render_scene(int scene_id);
 
