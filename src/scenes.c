@@ -1,6 +1,7 @@
 #include "scenes.h"
 #include "hittable_list.h"
 #include "material.h"
+#include "skybox.h"
 #include "sphere.h"
 
 void cornell_box(){
@@ -108,7 +109,7 @@ void cornell_box(){
     hittable_list priorities;
     init_list(&priorities);
     add_list(&priorities, &q3, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
-    add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    //add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     //add_list(&priorities, cube1, &hit, &get_list_box, &cube_pdf_value, &cube_pdf_generate);
     //Object Instance pdfs not currently working
     //add_list(&priorities, &t1, &hit_translate, &get_translate_box, &translate_pdf_value, &translate_pdf_generate);
@@ -227,9 +228,64 @@ void triangle_test(){
     delete_list(&world); 
 }
 
+
+void test_skybox(){
+    hittable_list world, priorities;
+    init_list(&world);
+    init_list(&priorities);
+    
+    color al;
+    init(&al, 0.8, 0.85, 0.88);
+
+    material aluminum;
+
+    init_metal(&aluminum, al, 0.0);
+    point3 c;
+    init(&c, -1.8, 0.25, 0);
+    sphere sph; 
+    init_sphere(&sph, c, 0.5, aluminum);
+    add_list_no_pdf(&world, &sph, &hit_sphere, &get_sphere_box);
+
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 1000;
+    cam.samples_per_pixel = 350;
+    //init(&(cam.background), 0, 0, 0);
+
+    skybox s;
+    init_skybox(&s, "forest.hdr");
+    cam.sky = &s;
+
+    cam.max_depth = 50;
+    cam.vfov = 70;
+    
+    point3 f, a, v;
+    
+    //teapot camera
+    init(&f, 0, 0, 0);
+    init(&a, -1.8, 0.25, 0);
+    init(&v, 0, 1, 0);
+     
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world, &priorities);
+    
+    delete_skybox(&s);
+    delete_texture(&(aluminum.tex));
+    delete_list(&priorities); 
+    delete_list(&world); 
+}
+
 void render_scene(int scene_id){
     switch(scene_id){
         case 1: cornell_box(); break;
         case 2: triangle_test(); break;
+        case 3: test_skybox(); break;
     }   
 }
