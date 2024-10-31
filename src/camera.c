@@ -238,7 +238,7 @@ void *render_portion(void *context){
 
             pthread_mutex_lock(p->mutex2); 
             //print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
-            print_color(pixel_color, p->raster + 4*((j * p->c->image_width) + i));
+            print_color(pixel_color, p->raster + 4*((j * p->c->image_width) + i), !p->c->sky);
             pthread_mutex_unlock(p->mutex2); 
         }
     }

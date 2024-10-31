@@ -195,7 +195,13 @@ static inline uint8_t get_exp(double max_rgb){
     return exp;
 }
 
-void print_color(const color c_in, uint8_t pixel[3]){
+static inline double linear_to_gamma(double x){
+    if(x > 0)
+        return pow(x, 1.0/2.2);
+    return 0;
+}
+
+void print_color(const color c_in, uint8_t pixel[3], bool linear){
     color c;
     copy(&c, c_in);
 
@@ -204,9 +210,15 @@ void print_color(const color c_in, uint8_t pixel[3]){
     if(c.e[b] != c.e[b]) c.e[b] = 0.0;
     if(c.e[g] != c.e[g]) c.e[g] = 0.0;
 
-    c.e[r] = 255.999 * c.e[r];
-    c.e[g] = 255.999 * c.e[g];
-    c.e[b] = 255.999 * c.e[b];
+    if(linear){
+        c.e[r] = 255.999 * linear_to_gamma(c.e[r]);
+        c.e[g] = 255.999 * linear_to_gamma(c.e[g]);
+        c.e[b] = 255.999 * linear_to_gamma(c.e[b]);
+    } else {
+        c.e[r] = 255.999 * c.e[r];
+        c.e[g] = 255.999 * c.e[g];
+        c.e[b] = 255.999 * c.e[b];
+    }
 
     //finding exponent
     uint8_t exp;

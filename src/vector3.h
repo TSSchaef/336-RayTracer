@@ -47,6 +47,6 @@ vector3 random_vector(double min, double max);
 vector3 random_cosine_direction();
 
 void print(const vector3 v);
-void print_color(const color c, uint8_t pixel[3]);
+void print_color(const color c, uint8_t pixel[3], bool linear);
 
 #endif
