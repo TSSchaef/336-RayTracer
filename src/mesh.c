@@ -51,7 +51,12 @@ static void get_file_data(void* ctx, const char* filename, const int is_mtl,
         c->obj = *data;
     }
     
-    fread(*data, 1, size, f);
+    size_t s;
+    s = fread(*data, 1, size, f);
+    if(s != size){
+        fprintf(stderr, "ERROR: Error reading mesh data\n");
+        return;
+    }
     (*data)[size] = '\0';
 
     fclose(f);
@@ -119,7 +124,7 @@ mesh *load_mesh(const char* filename, material mat){
         //no normal for triangle in obj file
         triangle *t = (triangle *) malloc(sizeof(triangle));
         init_triangle(t, points[f0], points[f1], points[f2], mat);
-        add_list(m->list, t, &hit_triangle, &get_triangle_box);
+        add_list_no_pdf(m->list, t, &hit_triangle, &get_triangle_box);
     }
 
     free(points);

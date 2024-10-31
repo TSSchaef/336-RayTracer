@@ -6,7 +6,7 @@
 #endif
 
 bool load(image *i, char * filename){
-    int n = i->bytes_per_pixel;
+    int n;
     i->bdata = stbi_load(filename, &(i->image_width), &(i->image_height), &n, i->bytes_per_pixel);
 
     if(!i->bdata) return false;
@@ -16,7 +16,7 @@ bool load(image *i, char * filename){
 }
 
 void load_image(image *i, const char *filename){
-    i->bytes_per_pixel = 3;
+    i->bytes_per_pixel = 4;
     i->bdata = NULL;
     i->image_width = 0;
     i->image_height = 0;

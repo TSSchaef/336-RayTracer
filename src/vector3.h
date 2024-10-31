@@ -44,6 +44,7 @@ vector3 random_unit_vector();
 vector3 random_on_hemisphere(const vector3 normal);
 vector3 random_default_vector();
 vector3 random_vector(double min, double max);
+vector3 random_cosine_direction();
 
 void print(const vector3 v);
 void print_color(const color c, uint8_t pixel[3]);

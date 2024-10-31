@@ -1,7 +1,16 @@
 #include "util.h"
 
+//static __thread unsigned int seed = -1;
+static unsigned int seed = -1;
+
+int rnd_int(int min, int max){
+    if(seed == -1){
+        seed = time(NULL);
+    }
+    return (rand_r(&seed) % (max - min + 1)) + min;
+}
+
 double rnd_double(){
-    static unsigned int seed = -1;
     if(seed == -1){
         seed = time(NULL);
     }

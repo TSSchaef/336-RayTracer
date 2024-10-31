@@ -1,16 +1,23 @@
 #include "camera.h"
+
+#include "material.h"
+#include "pdf.h"
+#include "skybox.h"
 #include "util.h"
+#include "vector3.h"
 #include <pthread.h>
 
 typedef struct {
     const camera *c;
     const hittable_list *world;
+    const hittable_list *priorities;
     uint8_t *raster;
     int *height;
-    pthread_mutex_t *mutex;
+    pthread_mutex_t *mutex1;
+    pthread_mutex_t *mutex2;
 } render_info;
 
-color ray_color(ray r, int depth, const hittable_list *world, color background){
+color ray_color(ray r, int depth, const hittable_list *world, const hittable_list *priorities, color background, skybox *sky){
     if(depth <= 0){
         color black;
         init(&black, 0, 0, 0);
@@ -18,18 +25,48 @@ color ray_color(ray r, int depth, const hittable_list *world, color background){
     }
 
     hit_record h;
+    scatter_record s;
 
-    if(!hit(world, r, 0.001, DBL_MAX, &h)) return background;
+    if(!hit(world, r, 0.001, DBL_MAX, &h)){
+        if(!sky) return background;
+        return skybox_value(sky, r);
+    }
 
-    ray bounce;
-    color attenuation;
-    color color_from_emmision = (*(h.mat.emit))(&(h.mat), h.u, h.v, h.p);
+    double pdf_value;
+    color color_from_emmision = (*(h.mat->emit))(h.mat, r, h, h.u, h.v, h.p);
 
-    if(!(*h.mat.scatter_func)(r, &h, &attenuation, &bounce)) {
+    if(!(*h.mat->scatter_func)(r, &h, &s)) {
         return color_from_emmision;
     }
 
-    add_vector(&color_from_emmision, attenuate(attenuation, ray_color(bounce, depth - 1, world, background)));            
+    
+    //skips importance sampling for specular surfaces
+    if(s.skip_pdf){
+        return attenuate(s.attenuation, ray_color(s.skip_pdf_ray, depth - 1, world, priorities, background, sky));
+    }
+
+    //mixing a pdf of important objects and the material's inherent pdf 
+    pdf hittable_pdf, mixture_pdf;
+    init_hittable_pdf(&hittable_pdf, priorities, h.p);
+    init_mixture_pdf(&mixture_pdf, &hittable_pdf, s.pdf_ptr);
+
+    ray bounce;
+    init_ray(&bounce, h.p, mixture_pdf.generate(mixture_pdf)); 
+    pdf_value = mixture_pdf.value(mixture_pdf, bounce.dir);
+    delete_pdf(&hittable_pdf);
+    delete_pdf(s.pdf_ptr);
+    delete_pdf(&mixture_pdf);
+    free(s.pdf_ptr);
+
+    double scatter_pdf = h.mat->pdf(r, h, bounce);
+
+
+    color color_from_scatter;
+    copy(&color_from_scatter, attenuate(s.attenuation, ray_color(bounce, depth - 1, world, priorities, background, sky)));
+    
+    scale(&color_from_scatter, scatter_pdf / pdf_value);
+    
+    add_vector(&color_from_emmision, color_from_scatter);            
     return color_from_emmision;
 }
 
@@ -43,6 +80,9 @@ void initialize(camera *c){
     c->image_height = (int) c->image_width / c->aspect_ratio; 
     c->image_height = (c->image_height < 1) ? 1 : c->image_height;
     c->focus_dist = (c->focus_dist >= 0) ? c->focus_dist : 1;
+
+    c->sqrt_spb = (int) sqrt(SAMPLES_PER_BATCH);
+    c->recip_sqrt_spb = 1.0 / c->sqrt_spb;
 
     copy(&(c->center), c->lookfrom);
 
@@ -111,10 +151,16 @@ point3 defocus_disk_sample(const camera *c){
     return p;
 }
 
-ray get_ray(const camera *c, int i, int j){
+vector3 sample_square_stratified(const camera *c, int s_i, int s_j){
+    point3 pixel_sample;
+    init(&pixel_sample, ((s_i + rnd_double()) * c->recip_sqrt_spb) - 0.5, ((s_j + rnd_double()) * c->recip_sqrt_spb) - 0.5, 0);
+    return pixel_sample;
+}
+
+ray get_ray(const camera *c, int i, int j, int s_i, int s_j){
     //sample square
     point3 pixel_sample;
-    init(&pixel_sample, rnd_double() - 0.5, rnd_double() - 0.5, 0);
+    copy(&pixel_sample, sample_square_stratified(c, s_i, s_j));
 
     point3 u_offset, v_offset;
 
@@ -143,15 +189,15 @@ void *render_portion(void *context){
     render_info *p = (render_info *) context;
     color pixel_color;
     init(&pixel_color, 0, 0, 0);
-    int i, j, sample;
+    int i, j, s_i, s_j, sample;
     double illum, illumSum, illumSqrSum, sigSqr;
     
     while(1){
-        pthread_mutex_lock(p->mutex); 
+        pthread_mutex_lock(p->mutex1); 
             j = *(p->height);
             *(p->height) += 1;
-        pthread_mutex_unlock(p->mutex);
-        fprintf(stderr, "\rScanlines remaining: %d        ", p->c->image_height - j);
+        pthread_mutex_unlock(p->mutex1);
+        fprintf(stderr, "\rScanlines remaining: %d        ", p->c->image_height + NUM_THREADS - j);
         fflush(stderr);
 
         if(j >= p->c->image_height) break;
@@ -160,30 +206,40 @@ void *render_portion(void *context){
         for(i = 0; i < p->c->image_width; i++){
             illumSum = 0;
             illumSqrSum = 0;
-            for(sample = 1; sample <= p->c->samples_per_pixel; sample++){
-                ray r = get_ray(p->c, i, j);
+            for(sample = 1; sample <= p->c->samples_per_pixel; ){
+                
+                //doing batch of stratified sampling
+                //checking for pixel illuminance convergence after each batch
+                for(s_j = 0; s_j < p->c->sqrt_spb; s_j++){
+                    for(s_i = 0; s_i < p->c->sqrt_spb; s_i++){
+                        ray r = get_ray(p->c, i, j, s_i, s_j);
 
-                color sampleColor;
-                copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->c->background));
-                illum = illuminance(sampleColor);
-                illumSum += illum;
-                illumSqrSum += illum * illum;
+                        color sampleColor;
+                        copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->priorities, p->c->background, p->c->sky));
+                        illum = illuminance(sampleColor);
+                        illumSum += illum;
+                        illumSqrSum += illum * illum;
 
-                add_vector(&pixel_color, sampleColor);
+                        add_vector(&pixel_color, sampleColor);
+
+                        sample++;
+                    }
+                }
 
                 //checking if pixel illuminance has converged and the average
                 //sampled illuminance is within a 95% confidence interval.
                 //EQ is reqrranged to avoid divisions and square roots
                 //Stopping sampling early if so.
-                if(sample % SAMPLES_PER_BATCH == 0){
-                    sigSqr = ((illumSqrSum * sample) - (illumSum * illumSum)) / ((sample * sample) - sample);
-                    if(Z_95_VALUE_SQR * sample * sigSqr <= MAX_TOLERANCE_SQR * illumSum * illumSum) break;
-                }
+                sigSqr = ((illumSqrSum * sample) - (illumSum * illumSum)) / ((sample * sample) - sample);
+                if(Z_95_VALUE_SQR * sample * sigSqr <= MAX_TOLERANCE_SQR * illumSum * illumSum) break;
             }
 
             scale(&pixel_color, 1.0 / sample);
 
-            print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
+            pthread_mutex_lock(p->mutex2); 
+            //print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
+            print_color(pixel_color, p->raster + 4*((j * p->c->image_width) + i));
+            pthread_mutex_unlock(p->mutex2); 
         }
     }
 
@@ -191,29 +247,32 @@ void *render_portion(void *context){
     return NULL;
 }
 
-void render(camera *c, const hittable_list *world){
+void render(camera *c, const hittable_list *world, const hittable_list *priorities){
     initialize(c);
     
-    FILE *img = fopen("image.ppm", "wb");
+    FILE *img = fopen("image.hdr", "wb");
     if(!img){
         fprintf(stderr, "ERROR: Unable to open image file to write to");
         return;
     }
-    fprintf(img, "P3\n %d %d\n255\n", c->image_width, c->image_height);
+    fprintf(img, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y %d +X %d\n", c->image_height, c->image_width);
 
-    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 3 * sizeof(uint8_t));
+    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 4 * sizeof(uint8_t));
 
     int i, j, height = 0;
-    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
     render_info *contexts[NUM_THREADS];
     pthread_t threads[NUM_THREADS];
     for(i = 0; i < NUM_THREADS; i++){
         contexts[i] = (render_info *) malloc(sizeof(render_info));
         contexts[i]->c = c;
         contexts[i]->world = world;
+        contexts[i]->priorities = priorities;
         contexts[i]->height = &height;
         contexts[i]->raster = raster;
-        contexts[i]->mutex = &mutex;
+        contexts[i]->mutex1 = &mutex1;
+        contexts[i]->mutex2 = &mutex2;
 
         pthread_create(&threads[i], NULL, &render_portion, contexts[i]);
     }
@@ -225,10 +284,8 @@ void render(camera *c, const hittable_list *world){
     }
 
     for(j = 0; j < c->image_height; j++) {
-        for(i = 0; i < c->image_width; i++){
-            uint8_t *pixel = raster + 3*((j * c->image_width) + i);
-            fprintf(img, "%d %d %d\n", pixel[r], pixel[g], pixel[b]);
-        }
+        uint8_t *line = raster + 4*(j * c->image_width);
+        fwrite(line, (4*c->image_width), 1, img);
     }
 
     free(raster);

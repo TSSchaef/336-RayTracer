@@ -4,10 +4,12 @@
 #include "util.h"
 #include "material.h"
 #include "hittable_list.h"
+#include "skybox.h"
 #include "pthread.h"
+#include "pdf.h"
 #include "stdint.h"
 
-#define SAMPLES_PER_BATCH 50
+#define SAMPLES_PER_BATCH 64
 #define Z_95_VALUE_SQR 3.8416 
 #define MAX_TOLERANCE_SQR 0.0025
 
@@ -21,8 +23,11 @@ typedef struct {
     vector3 pixel_delta_v;
     int samples_per_pixel;
     double pixel_samples_scale;
+    int sqrt_spb;
+    double recip_sqrt_spb;
     int max_depth;
 
+    skybox *sky;
     color background;
 
     double vfov;
@@ -38,6 +43,6 @@ typedef struct {
 } camera;
 
 void initialize(camera *c);
-void render(camera *c, const hittable_list *world);
+void render(camera *c, const hittable_list *world, const hittable_list *priorities);
 
 #endif

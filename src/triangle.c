@@ -103,7 +103,7 @@ bool hit_triangle(const void *q, ray r, double ray_tmin, double ray_tmax, hit_re
 
     rec->t = t;
     copy(&(rec->p), intersection);
-    copy_material(&(rec->mat), qu->mat);
+    rec->mat = &(qu->mat);
     set_face_normal(rec, r, qu->normal);
 
     return true;

@@ -1,4 +1,6 @@
 #include "quad.h"
+#include "material.h"
+#include "vector3.h"
 
 static void set_bbox(quad *q){
     point3 temp;
@@ -31,6 +33,8 @@ void init_quad(quad *q, point3 Qc, vector3 uc, vector3 vc, material matc){
 
     copy(&(q->w), q->normal);
     scale(&(q->w), 1.0 / dot(q->normal, q->normal));
+   
+    q->area = length(q->normal);
     
     unit_vector(&(q->normal));
 
@@ -71,7 +75,7 @@ bool hit_quad(const void *q, ray r, double ray_tmin, double ray_tmax, hit_record
 
     rec->t = t;
     copy(&(rec->p), intersection);
-    copy_material(&(rec->mat), qu->mat);
+    rec->mat = &qu->mat;
     set_face_normal(rec, r, qu->normal);
 
     return true;
@@ -79,6 +83,40 @@ bool hit_quad(const void *q, ray r, double ray_tmin, double ray_tmax, hit_record
 
 aabb get_quad_box(const void *s){
     return ((quad *)s)->bbox;
+}
+
+double quad_pdf_value(const void *q, const point3 orig, const vector3 dir){
+    hit_record rec;
+    ray r;
+    init_ray(&r, orig, dir);
+    if(!hit_quad(q, r, 0.0001, DBL_MAX, &rec)){
+        return 0;
+    }
+
+    double dist_sqr = rec.t * rec.t * length_squared(dir);
+    double cosine = dot(dir, rec.normal) / length(dir);
+    cosine = cosine < 0 ? -1 * cosine : cosine;
+
+    return dist_sqr / (cosine * ((const quad *)q)->area);
+}
+
+vector3 quad_pdf_generate(const void *q, const point3 orig){
+    const quad *qu = (quad *)q;
+    point3 temp, temp_v;
+    copy(&temp, qu->u);
+    copy(&temp_v, qu->v);
+
+    scale(&temp, rnd_double()); 
+    scale(&temp_v, rnd_double()); 
+
+    add_vector(&temp, temp_v);
+    add_vector(&temp, qu->Q);
+
+    copy(&temp_v, orig);
+    invert(&temp_v);
+
+    add_vector(&temp, temp_v);
+    return temp;
 }
 
 
@@ -123,14 +161,58 @@ hittable_list *init_cube(point3 a, point3 b, material mat){
   init_quad(top, t, dx, ndz, mat);
   init_quad(bottom, bo, dx, dz, mat);
 
-  add_list(sides, front, &hit_quad, &get_quad_box);
-  add_list(sides, right, &hit_quad, &get_quad_box);
-  add_list(sides, back, &hit_quad, &get_quad_box);
-  add_list(sides, left, &hit_quad, &get_quad_box);
-  add_list(sides, top, &hit_quad, &get_quad_box);
-  add_list(sides, bottom, &hit_quad, &get_quad_box);
+  add_list(sides, top, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, front, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, right, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, back, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, left, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, bottom, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
 
   return sides;
+}
+
+static double quad_within_cube_pdf_value(const quad *q, const ray r, double min, double max, hit_record *rec){
+    if(!hit_quad(q, r, min, max, rec)){
+        return 0;
+    }
+
+    double dist_sqr = rec->t * rec->t * length_squared(r.dir);
+    double cosine = dot(r.dir, rec->normal) / length(r.dir);
+    cosine = cosine < 0 ? -1 * cosine : cosine;
+
+    return dist_sqr / (cosine * ((const quad *)q)->area);
+}
+
+double cube_pdf_value(const void *l, const point3 orig, const vector3 dir){
+    const hittable_list *li = (hittable_list *)l;
+
+    if(li->size <= 0){
+        return 0;
+    }
+
+    int i;
+    double value, ans = -1, max = DBL_MAX;
+    ray r;
+    init_ray(&r, orig, dir);
+    hit_record h;
+    for(i = 0; i < li->size; i++){
+        const hittable_node *node = index_list(li, i);
+        value = quad_within_cube_pdf_value((quad *)node->hittable, r, 0.0001, max, &h);
+        if(value > 0){
+            ans = value;
+            max = h.t;
+        }
+    }
+
+    if(ans < 0) return 0;
+    return ans;
+}
+
+vector3 cube_pdf_generate(const void *list, const point3 orig){
+    const hittable_list *li = (hittable_list *)list;
+    const hittable_node *rnd_node = index_list(li, rnd_int(0, 2));
+
+    return (*(rnd_node->pdf_generate))(rnd_node->hittable, orig);
 }
 
 void delete_cube(hittable_list *l){

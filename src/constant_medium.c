@@ -53,8 +53,7 @@ bool hit_constant_medium(const void *c, ray r, double ray_tmin, double ray_tmax,
 
     init(&(rec->normal), 1, 0, 0);
     rec->front_face = true;
-    copy_material(&(rec->mat), m->phase_func);
-
+    rec->mat = &m->phase_func;
     return true;
 }
 

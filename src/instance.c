@@ -2,12 +2,18 @@
 #include "aabb.h"
 #include "util.h"
 
-void init_translate(translate *t, void *h, fptr_is_hit hit, aabb box, vector3 o){
+void init_translate_no_pdf(translate *t, void *h, fptr_is_hit hit, aabb box, vector3 o){
     t->hittable = h;
     t->hit_object = hit;
     copy(&(t->offset), o);
     copy_box(&(t->bbox), box);
     shift_box(&(t->bbox), t->offset);
+}
+
+void init_translate(translate *t, void *hittable, fptr_is_hit hit, hittable_pdf_value v, hittable_pdf_generate g, aabb box, vector3 o){
+    init_translate_no_pdf(t, hittable, hit, box, o);
+    t->value = v;
+    t->generate = g;
 }
 
 bool hit_translate(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
@@ -31,8 +37,27 @@ aabb get_translate_box(const void *s){
     return ((translate *)s)->bbox;
 }
 
+double translate_pdf_value(const void *s, const point3 orig, const vector3 dir){
+    const translate *t = ((translate *)s);
+    point3 p;
+    copy(&p, t->offset);
+    invert(&p);
+    add_vector(&p, orig);
+    return (*(t->value))(t->hittable, p, dir); 
+}
 
-void init_rotate(rotate *r, void *h, fptr_is_hit hit, aabb box, double theta){\
+vector3 translate_pdf_generate(const void *s, const point3 orig){
+    const translate *t = ((translate *)s);
+    point3 p;
+    copy(&p, t->offset);
+    invert(&p);
+    add_vector(&p, orig);
+
+    return (*(t->generate))(t->hittable, p); 
+}
+
+
+void init_rotate_no_pdf(rotate *r, void *h, fptr_is_hit hit, aabb box, double theta){
     double rad = DEG_TO_RAD(theta);
     r->sin_theta = sin(rad);
     r->cos_theta = cos(rad);
@@ -66,6 +91,43 @@ void init_rotate(rotate *r, void *h, fptr_is_hit hit, aabb box, double theta){\
     }
 
     init_aabb_points(&(r->bbox), min, max);
+}
+
+void init_rotate(rotate *r, void *hittable, fptr_is_hit hit, hittable_pdf_value v, hittable_pdf_generate g, aabb box, double theta){
+    init_rotate_no_pdf(r, hittable, hit, box, theta);
+    r->value = v;
+    r->generate = g;
+}
+
+double rotate_pdf_value(const void *s, const point3 orig, const vector3 dir){
+    const rotate *ro = ((rotate *)s);
+    point3 origin;
+    init(&origin, ro->cos_theta * orig.e[x] - ro->sin_theta * orig.e[z],
+                orig.e[y],
+                ro->sin_theta * orig.e[x] + ro->cos_theta * orig.e[z]);
+
+    vector3 direction;
+    init(&direction, ro->cos_theta * dir.e[x] - ro->sin_theta * dir.e[z],
+                    dir.e[y],
+                    ro->sin_theta * dir.e[x] + ro->cos_theta * dir.e[z]);
+
+    return (*ro->value)(ro->hittable, origin, direction);
+}
+
+vector3 rotate_pdf_generate(const void *s, const point3 orig){
+    const rotate *ro = ((rotate *)s);
+    point3 origin;
+    init(&origin, ro->cos_theta * orig.e[x] - ro->sin_theta * orig.e[z],
+                orig.e[y],
+                ro->sin_theta * orig.e[x] + ro->cos_theta * orig.e[z]);
+
+    vector3 vec, ans;
+    copy(&vec, (*ro->generate)(ro->hittable, origin));
+    init(&ans, ro->cos_theta * vec.e[x] + ro->sin_theta * vec.e[z],
+                vec.e[y],
+                (-1 * ro->sin_theta * vec.e[x]) + ro->cos_theta * vec.e[z]);
+
+    return ans;
 }
 
 bool hit_rotate(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec){
