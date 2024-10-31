@@ -237,7 +237,8 @@ void *render_portion(void *context){
             scale(&pixel_color, 1.0 / sample);
 
             pthread_mutex_lock(p->mutex2); 
-            print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
+            //print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
+            print_color(pixel_color, p->raster + 4*((j * p->c->image_width) + i));
             pthread_mutex_unlock(p->mutex2); 
         }
     }
@@ -249,14 +250,14 @@ void *render_portion(void *context){
 void render(camera *c, const hittable_list *world, const hittable_list *priorities){
     initialize(c);
     
-    FILE *img = fopen("image.ppm", "wb");
+    FILE *img = fopen("image.hdr", "wb");
     if(!img){
         fprintf(stderr, "ERROR: Unable to open image file to write to");
         return;
     }
-    fprintf(img, "P3\n %d %d\n255\n", c->image_width, c->image_height);
+    fprintf(img, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y %d +X %d\n", c->image_height, c->image_width);
 
-    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 3 * sizeof(uint8_t));
+    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 4 * sizeof(uint8_t));
 
     int i, j, height = 0;
     pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
@@ -283,10 +284,8 @@ void render(camera *c, const hittable_list *world, const hittable_list *prioriti
     }
 
     for(j = 0; j < c->image_height; j++) {
-        for(i = 0; i < c->image_width; i++){
-            uint8_t *pixel = raster + 3*((j * c->image_width) + i);
-            fprintf(img, "%d %d %d\n", pixel[r], pixel[g], pixel[b]);
-        }
+        uint8_t *line = raster + 4*(j * c->image_width);
+        fwrite(line, (4*c->image_width), 1, img);
     }
 
     free(raster);

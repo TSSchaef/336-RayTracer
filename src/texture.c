@@ -102,13 +102,12 @@ color image_value(const texture *t, double u, double v, point3 p){
     int k = (int) (u * i->image_width);
     int j = (int) (v * i->image_height);
     const unsigned char *pixel = pixel_data(i, k, j);
-
-    // Removed for HDR and lighting from textures
-    double color_scale = 1.0 / 255.0;
     
     color c;
-    init(&c, color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
-    //init(&c, pixel[0], pixel[1], pixel[2]);
+    init(&c, pixel[0], pixel[1], pixel[2]);
+
+    scale(&c, 1.0 / 255.0);
+
     return c;
 }
 

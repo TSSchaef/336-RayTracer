@@ -171,16 +171,28 @@ inline void print(const vector3 v){
     printf("%lf %lf %lf\n", v.e[0], v.e[1], v.e[2]);
 }
 
-static inline double clamp_color(double x){
-    if(x < 0.0) return 0.0;
-    if(x > 0.999) return 0.999;
-    return x;
-}
-
-static inline double linear_to_gamma(double x){
-    if(x > 0)
-        return sqrt(x);
-    return 0;
+static inline uint8_t get_exp(double max_rgb){
+    uint8_t exp = 128;
+    if(max_rgb >= 256){
+        while(max_rgb > 256){
+            max_rgb /= 2;
+            exp++;
+            if(exp >= 255){
+                return 255;
+            }
+        }
+    } else {
+        while(max_rgb < 256){
+            max_rgb *= 2;
+            exp--;
+            if(exp <= 0){
+                return 0;
+            }
+        }
+        // Went 1 two far
+        exp++;
+    }
+    return exp;
 }
 
 void print_color(const color c_in, uint8_t pixel[3]){
@@ -192,12 +204,29 @@ void print_color(const color c_in, uint8_t pixel[3]){
     if(c.e[b] != c.e[b]) c.e[b] = 0.0;
     if(c.e[g] != c.e[g]) c.e[g] = 0.0;
 
-    int rbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[r]));
-    int gbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[g])); 
-    int bbyte = (int) 256 * clamp_color(linear_to_gamma(c.e[b])); 
+    c.e[r] = 255.999 * c.e[r];
+    c.e[g] = 255.999 * c.e[g];
+    c.e[b] = 255.999 * c.e[b];
 
-    //printf("%d %d %d\n", rbyte, gbyte, bbyte);
-    pixel[r] = rbyte;
-    pixel[g] = gbyte;
-    pixel[b] = bbyte;
+    //finding exponent
+    uint8_t exp;
+    if(c.e[r] > c.e[g]){
+        if(c.e[r] > c.e[b]){
+           exp = get_exp(c.e[r]); 
+        } else {
+           exp = get_exp(c.e[b]); 
+        }
+    } else {
+        if(c.e[g] > c.e[b]){
+           exp = get_exp(c.e[g]); 
+        } else {
+           exp = get_exp(c.e[b]); 
+        }
+    }
+
+    pixel[r] = (uint8_t) exp > 0 ? (c.e[r] / pow(2, exp - 128)) : 0;
+    pixel[g] = (uint8_t) exp > 0 ? (c.e[g] / pow(2, exp - 128)) : 0;
+    pixel[b] = (uint8_t) exp > 0 ? (c.e[b] / pow(2, exp - 128)) : 0;
+    //setting exponent
+    pixel[3] = exp;
 }

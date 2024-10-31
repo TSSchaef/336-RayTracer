@@ -255,6 +255,7 @@ void test_skybox(){
 
     skybox s;
     init_skybox(&s, "forest.hdr");
+    //init_skybox(&s, "earth.jpg");
     cam.sky = &s;
 
     cam.max_depth = 50;
