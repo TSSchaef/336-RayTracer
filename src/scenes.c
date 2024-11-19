@@ -64,25 +64,25 @@ void cornell_box(){
     add_list_no_pdf(&world, &q5, &hit_quad, &get_quad_box);
     add_list_no_pdf(&world, &q6, &hit_quad, &get_quad_box);
 
-    point3 p1, p2, p3, p4;
+    point3 p1, p2;//, p3, p4;
     init(&p1, 0, 0, 0);
     init(&p2, 165, 330, 165);
 
     //init(&p3, 0, 0, 0);
     //init(&p4, 165, 165, 165);
     
-    hittable_list *cube1, *cube2;
+    hittable_list *cube1;//, *cube2;
 
     //cube1 = init_cube(p1, p2, white);
     cube1 = init_cube(p1, p2, aluminum);
     //cube2 = init_cube(p3, p4, white);
 
-    rotate r1, r2;
+    rotate r1;//, r2;
     init_rotate(&r1, cube1, &hit, &cube_pdf_value, &cube_pdf_generate, cube1->box, 15);
     //init_rotate(&r2, cube2, &hit, cube2->box, -18);
 
-    translate t1, t2;
-    vector3 o1, o2;
+    translate t1;//, t2;
+    vector3 o1;//, o2;
     init(&o1, 265, 0, 295);
     //init(&o2, 130, 0, 65);
     //init_translate(&t1, cube1, &hit, &hittable_list_pdf_value, &hittable_list_pdf_generate, cube1->box, o1);
@@ -234,17 +234,16 @@ void test_skybox(){
     init_list(&world);
     init_list(&priorities);
     
-    color al;
-    init(&al, 0.8, 0.85, 0.88);
+    color foggy;
+    init(&foggy, 0.8, 0.85, 0.88);
 
-    material aluminum;
-
-    init_metal(&aluminum, al, 0.0);
+    material fog;
+    init_isotropic(&fog, foggy);
     point3 c;
     init(&c, -1.8, 0.25, 0);
     sphere sph; 
-    init_sphere(&sph, c, 0.5, aluminum);
-    add_list_no_pdf(&world, &sph, &hit_sphere, &get_sphere_box);
+    init_sphere(&sph, c, 0.5, fog);
+    add_list(&world, &sph, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
 
     //initializing camera
     camera cam;
@@ -254,7 +253,7 @@ void test_skybox(){
     //init(&(cam.background), 0, 0, 0);
 
     skybox s;
-    init_skybox(&s, "forest.hdr");
+    init_skybox(&s, "relic.hdr");
     //init_skybox(&s, "earth.jpg");
     cam.sky = &s;
 
@@ -278,7 +277,7 @@ void test_skybox(){
     render(&cam, &world, &priorities);
     
     delete_skybox(&s);
-    delete_texture(&(aluminum.tex));
+    delete_texture(&(fog.tex));
     delete_list(&priorities); 
     delete_list(&world); 
 }
