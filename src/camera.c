@@ -46,24 +46,24 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
     }
 
     //mixing a pdf of important objects and the material's inherent pdf 
-    pdf hittable_pdf, *mixture_pdf;
+    pdf hittable_pdf, mixture_pdf;
     // Handling if no importance sampling is used
     if(priorities->size > 0){
         init_hittable_pdf(&hittable_pdf, priorities, h.p);
-        init_mixture_pdf(mixture_pdf, &hittable_pdf, s.pdf_ptr);
+        init_mixture_pdf(&mixture_pdf, &hittable_pdf, s.pdf_ptr);
     } else {
-        mixture_pdf = s.pdf_ptr;
+        mixture_pdf = *(s.pdf_ptr);
     }
 
     ray bounce;
-    init_ray(&bounce, h.p, mixture_pdf->generate(*mixture_pdf)); 
-    pdf_value = mixture_pdf->value(*mixture_pdf, bounce.dir);
+    init_ray(&bounce, h.p, mixture_pdf.generate(mixture_pdf)); 
+    pdf_value = mixture_pdf.value(mixture_pdf, bounce.dir);
     delete_pdf(s.pdf_ptr);
     free(s.pdf_ptr);
 
-    if(priorities->size >0){
+    if(priorities->size > 0){
         delete_pdf(&hittable_pdf);
-        delete_pdf(mixture_pdf);
+        delete_pdf(&mixture_pdf);
     }
 
     double scatter_pdf = h.mat->pdf(r, h, bounce);

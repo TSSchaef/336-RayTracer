@@ -1,8 +1,10 @@
 #include "scenes.h"
 #include "hittable_list.h"
+#include "instance.h"
 #include "material.h"
 #include "skybox.h"
 #include "sphere.h"
+#include "texture.h"
 
 void cornell_box(){
     hittable_list world;
@@ -64,39 +66,27 @@ void cornell_box(){
     add_list_no_pdf(&world, &q5, &hit_quad, &get_quad_box);
     add_list_no_pdf(&world, &q6, &hit_quad, &get_quad_box);
 
-    point3 p1, p2;//, p3, p4;
+    point3 p1, p2;
     init(&p1, 0, 0, 0);
     init(&p2, 165, 330, 165);
 
-    //init(&p3, 0, 0, 0);
-    //init(&p4, 165, 165, 165);
-    
-    hittable_list *cube1;//, *cube2;
-
-    //cube1 = init_cube(p1, p2, white);
+    hittable_list *cube1;
     cube1 = init_cube(p1, p2, aluminum);
-    //cube2 = init_cube(p3, p4, white);
 
-    rotate r1;//, r2;
+    rotate r1;
+    translate t1;
+    vector3 o1;
     init_rotate(&r1, cube1, &hit, &cube_pdf_value, &cube_pdf_generate, cube1->box, 15);
-    //init_rotate(&r2, cube2, &hit, cube2->box, -18);
-
-    translate t1;//, t2;
-    vector3 o1;//, o2;
     init(&o1, 265, 0, 295);
-    //init(&o2, 130, 0, 65);
-    //init_translate(&t1, cube1, &hit, &hittable_list_pdf_value, &hittable_list_pdf_generate, cube1->box, o1);
     init_translate(&t1, &r1, &hit_rotate, &rotate_pdf_value, &rotate_pdf_generate, r1.bbox, o1);
-    //init_translate(&t2, &r2, &hit_rotate, r2.bbox, o2);
 
     add_list_no_pdf(&world, &t1, &hit_translate, &get_translate_box);
-    //add_list_no_pdf(&world, &t2, &hit_translate, &get_translate_box);
     
     point3 center;
     init(&center, 190, 90, 190);
     sphere s;
-    init_sphere(&s, center, 90, white);
-    //init_sphere(&s, center, 90, glass);
+    //init_sphere(&s, center, 90, white);
+    init_sphere(&s, center, 90, glass);
     add_list_no_pdf(&world, &s, &hit_sphere, &get_sphere_box);
     
     bvh_node root;
@@ -109,17 +99,16 @@ void cornell_box(){
     hittable_list priorities;
     init_list(&priorities);
     add_list(&priorities, &q3, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
-    //add_list(&priorities, &s, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
-    //add_list(&priorities, cube1, &hit, &get_list_box, &cube_pdf_value, &cube_pdf_generate);
-    //Object Instance pdfs not currently working
-    //add_list(&priorities, &t1, &hit_translate, &get_translate_box, &translate_pdf_value, &translate_pdf_generate);
     
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 1200;
-    cam.samples_per_pixel = 3;//000;
+    cam.samples_per_pixel = 3000;
+
     init(&(cam.background), 0, 0, 0);
+    cam.sky = NULL;
+
     cam.max_depth = 50;
     cam.vfov = 40;
     
@@ -153,52 +142,49 @@ void triangle_test(){
     hittable_list world;
     init_list(&world);
     
-    color r, l;
+    color r, red, blue;
     init(&r, 0.9, 0.9, 0.75);
-    init(&l, 100.0, 100.0, 100.0);
+    init(&red, 100.0, 0, 0);
+    init(&blue, 0, 0, 100.0);
 
-    material dif_light, mat;
+    material dif_red_light, dif_blue_light, mat;
 
-    //init_dielectric(&mat, 1.00/1.33);
-    //init_metal(&mat, r, 0);
     init_lambertian(&mat, r);
-    init_diffuse_light(&dif_light, l);
+    init_diffuse_light(&dif_red_light, red);
+    init_diffuse_light(&dif_blue_light, blue);
 
-    //mesh *tree = load_mesh("Tree.obj", mat);
     point3 center1, center2;
     init(&center1, 1, 3.5, 0.5);
     init(&center2, -1, 3.5, 0.5);
     sphere s1, s2;
-    init_sphere(&s1, center1, 0.5, dif_light);
-    init_sphere(&s2, center2, 0.5, dif_light);
+    init_sphere(&s1, center1, 0.5, dif_blue_light);
+    init_sphere(&s2, center2, 0.5, dif_red_light);
 
-    mesh *tree = load_mesh("teapot.obj", mat);
-    //mesh *tree = load_mesh("untitled.obj", mat); //needs work
-    //mesh *tree = load_mesh("cube.obj", mat);
-    if(!tree){
+    mesh *teapot = load_mesh("teapot.obj", mat);
+    if(!teapot){
         delete_texture(&(mat.tex));
         delete_list(&world); 
         return;
     }
 
-    add_list_no_pdf(&world, tree->bvh, &hit_bvh, &get_bvh_box);
+    add_list_no_pdf(&world, teapot->bvh, &hit_bvh, &get_bvh_box);
     add_list_no_pdf(&world, &s1, &hit_sphere, &get_sphere_box);
     add_list_no_pdf(&world, &s2, &hit_sphere, &get_sphere_box);
 
-
     hittable_list priorities;
     init_list(&priorities);
-    add_list(&priorities, &s1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
-    add_list(&priorities, &s2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&world, &s1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&world, &s2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
-    cam.image_width = 1000;
-    cam.samples_per_pixel = 350;
+    cam.image_width = 2000;
+    cam.samples_per_pixel = 2000;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 70;
+    cam.sky = NULL;
     
     point3 f, a, v;
     
@@ -206,11 +192,6 @@ void triangle_test(){
     init(&f, 0, 4, 5);
     init(&a, 0.3, 0.5, 0);
     init(&v, 0, 1, 0);
-     
-    //tree camera
-    /*init(&f, 1000, 0, 1000);
-    init(&a, 0, 100, 0);
-    init(&v, 0, 1, 0);*/
     
     copy(&(cam.lookfrom), f);
     copy(&(cam.lookat), a);
@@ -222,49 +203,110 @@ void triangle_test(){
     render(&cam, &world, &priorities);
     
     delete_texture(&(mat.tex));
-    delete_texture(&(dif_light.tex));
-    delete_mesh(tree);
+    delete_texture(&(dif_red_light.tex));
+    delete_texture(&(dif_blue_light.tex));
+    delete_mesh(teapot);
     delete_list(&priorities); 
     delete_list(&world); 
 }
 
 
 void test_skybox(){
-    hittable_list world, priorities;
+    hittable_list world, priorities, skullObj;
     init_list(&world);
     init_list(&priorities);
+    init_list(&skullObj);
     
-    color foggy;
-    init(&foggy, 0.8, 0.85, 0.88);
+    color al, bone, glow;
+    init(&al, 0.8, 0.85, 0.88);
+    init(&bone, 0.98, 0.94, 0.78);
+    init(&glow, 0.754, 20, 0.566);
 
-    material fog;
-    init_isotropic(&fog, foggy);
+    material mat, aluminum, light;
+    init_metal(&aluminum, al, 0);
+    init_lambertian(&mat, bone);
+    init_diffuse_light(&light, glow);
+
+    point3 c1, c2, c3;
+    init(&c1, 13, 13.2, 3.7);
+    init(&c2, 13, 13.2, -3.7);
+    sphere sph1, sph2, l; 
+    init_sphere(&sph1, c1, 2.8, aluminum);
+    init_sphere(&sph2, c2, 2.8, aluminum);
+    add_list(&skullObj, &sph1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&skullObj, &sph2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+
+    mesh *skull = load_mesh("skull.obj", mat);
+    if(!skull){
+        delete_texture(&(mat.tex));
+        delete_list(&world); 
+        delete_list(&priorities); 
+        return;
+    }
+
+    rotate r1, r2;
+    init_rotate_no_pdf(&r1, skull->bvh, &hit_bvh, skull->bvh->bbox, 90);
+    init_rotate_z_no_pdf(&r2, &r1, &hit_rotate, r1.bbox, 270);
+    add_list_no_pdf(&skullObj, &r2, &hit_rotate_z, &get_rotate_box);
+
+
+    translate t1, t2;
+    vector3 vec1, vec2;
+    init(&vec1, 0, 0, 26);
+    init(&vec2, 0, 0, -26);
+    init_translate_no_pdf(&t1, &skullObj, &hit, skullObj.box, vec1);
+    init_translate_no_pdf(&t2, &skullObj, &hit, skullObj.box, vec2);
+
+    add_list_no_pdf(&world, &t1, &hit_translate, &get_translate_box);
+    add_list_no_pdf(&world, &t2, &hit_translate, &get_translate_box);
+
+    init(&c3, 9, 0, -2);
+    init_sphere(&l, c3, 8, light);
+    add_list(&world, &l, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+
+    add_list(&priorities, &l, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+        
+    texture perlin;
+    init_perlin_tex(&perlin, 4);
+    material perl;
+    init_lambertian_tex(&perl, perlin);
+
+    int i;
+    const int NUM_SPHERES = 1000;
+    sphere *s[NUM_SPHERES];
     point3 c;
-    init(&c, -1.8, 0.25, 0);
-    sphere sph; 
-    init_sphere(&sph, c, 0.5, fog);
-    add_list(&world, &sph, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    for(i = 0; i < NUM_SPHERES; i++){
+        s[i] = (sphere *) malloc(sizeof(sphere));
+
+        init(&c, rnd_int(-50, 50), rnd_int(-15, 0), rnd_int(-18, 18));
+        init_sphere(s[i], c, 1.2, perl);
+        add_list_no_pdf(&world, s[i], &hit_sphere, &get_sphere_box);
+    }
+    
+    // turning world into bvh 
+    bvh_node root;
+    init_bvh(&root, &world);
+
+    delete_list(&world);
+    init_list(&world);
+    add_list_no_pdf(&world, &root, &hit_bvh, &get_bvh_box);
 
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
-    cam.image_width = 1000;
-    cam.samples_per_pixel = 350;
-    //init(&(cam.background), 0, 0, 0);
+    cam.image_width = 2000;
+    cam.samples_per_pixel = 3500;
 
-    skybox s;
-    init_skybox(&s, "relic.hdr");
-    //init_skybox(&s, "earth.jpg");
-    cam.sky = &s;
+    skybox sky;
+    init_skybox(&sky, "relic.hdr");
+    cam.sky = &sky;
 
     cam.max_depth = 50;
     cam.vfov = 70;
     
     point3 f, a, v;
-    
-    //teapot camera
-    init(&f, 0, 0, 0);
-    init(&a, -1.8, 0.25, 0);
+    init(&f, 70, 10, 0);
+    init(&a, 0, 12, 0);
     init(&v, 0, 1, 0);
      
     copy(&(cam.lookfrom), f);
@@ -275,9 +317,19 @@ void test_skybox(){
     cam.focus_dist = 2;
 
     render(&cam, &world, &priorities);
+
+    for(i = 0; i < NUM_SPHERES; i++){
+        free(s[i]);
+    }
     
-    delete_skybox(&s);
-    delete_texture(&(fog.tex));
+    delete_skybox(&sky);
+    delete_texture(&(perlin));
+    delete_texture(&(mat.tex));
+    delete_texture(&(aluminum.tex));
+    delete_texture(&(light.tex));
+    delete_mesh(skull);
+    delete_bvh(&root);
+    delete_list(&skullObj); 
     delete_list(&priorities); 
     delete_list(&world); 
 }
