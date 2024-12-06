@@ -20,6 +20,7 @@ The ray tracer currently implements:
 * Parallelization on CPU's
 * Loading of object files as Triangle Meshes
 * Adaptive Sampling
+* Importance Sampling
 * Object Instancing
 * Loading images as textures
 * Perlin Noise Texturing
@@ -42,7 +43,6 @@ Current plans for the project include adding features for:
 * Optimizing Triangle Meshes
 * Optimizing the BVH
 * GPU acceleration with Nvidia's CUDA
-* Extending Object Instancing
 * Adding a BRDF
 
 ### Resources 

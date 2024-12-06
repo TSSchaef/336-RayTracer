@@ -334,10 +334,133 @@ void test_skybox(){
     delete_list(&world); 
 }
 
+void space(){
+    hittable_list world, priorities;
+    init_list(&world);
+    init_list(&priorities);
+    
+    color al, bone, glow;
+    init(&al, 0.8, 0.85, 0.88);
+    init(&bone, 0.98, 0.94, 0.78);
+    init(&glow, 0.754, 20, 0.566);
+
+    material mat, aluminum, light;
+    init_metal(&aluminum, al, 0);
+    init_lambertian(&mat, bone);
+    init_diffuse_light(&light, glow);
+
+    point3 c1, c2, c3;
+    init(&c1, 13, 13.2, 3.7);
+    init(&c2, 13, 13.2, -3.7);
+    sphere sph1, sph2, l; 
+    init_sphere(&sph1, c1, 2.8, aluminum);
+    init_sphere(&sph2, c2, 2.8, aluminum);
+
+    /*mesh *skull = load_mesh("skull.obj", mat);
+    if(!skull){
+        delete_texture(&(mat.tex));
+        delete_list(&world); 
+        delete_list(&priorities); 
+        return;
+    }*/
+
+    /*rotate r1, r2;
+    init_rotate_no_pdf(&r1, skull->bvh, &hit_bvh, skull->bvh->bbox, 90);
+    init_rotate_z_no_pdf(&r2, &r1, &hit_rotate, r1.bbox, 270);
+    add_list_no_pdf(&skullObj, &r2, &hit_rotate_z, &get_rotate_box);*/
+
+
+    /*translate t1, t2;
+    vector3 vec1, vec2;
+    init(&vec1, 0, 0, 26);
+    init(&vec2, 0, 0, -26);
+    init_translate_no_pdf(&t1, &skullObj, &hit, skullObj.box, vec1);
+    init_translate_no_pdf(&t2, &skullObj, &hit, skullObj.box, vec2);*/
+
+    //add_list_no_pdf(&world, &t1, &hit_translate, &get_translate_box);
+    //add_list_no_pdf(&world, &t2, &hit_translate, &get_translate_box);
+
+    init(&c3, 9, 0, -2);
+    init_sphere(&l, c3, 8, mat);
+    add_list(&world, &l, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+
+    //add_list(&priorities, &l, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+        
+    texture perlin;
+    init_perlin_tex(&perlin, 4);
+    material perl;
+    init_lambertian_tex(&perl, perlin);
+
+    /*int i;
+    const int NUM_SPHERES = 1000;
+    sphere *s[NUM_SPHERES];
+    point3 c;
+    for(i = 0; i < NUM_SPHERES; i++){
+        s[i] = (sphere *) malloc(sizeof(sphere));
+
+        init(&c, rnd_int(-50, 50), rnd_int(-15, 0), rnd_int(-18, 18));
+        init_sphere(s[i], c, 1.2, perl);
+        add_list_no_pdf(&world, s[i], &hit_sphere, &get_sphere_box);
+    }*/
+    
+    // turning world into bvh 
+    bvh_node root;
+    init_bvh(&root, &world);
+
+    delete_list(&world);
+    init_list(&world);
+    add_list_no_pdf(&world, &root, &hit_bvh, &get_bvh_box);
+
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 1000;
+    cam.samples_per_pixel = 35;//00;
+
+    skybox sky;
+    init_skybox(&sky, "blue-nebulae.hdr");
+    cam.sky = &sky;
+
+    cam.max_depth = 50;
+    cam.vfov = 120;
+    cam.defocus_angle = 10.0;
+    cam.focus_dist = 15.0;
+    
+    point3 f, a, v;
+    init(&f, 70, 10, 0);
+    init(&a, 0, 12, 0);
+    init(&v, 0, 1, 0);
+     
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world, &priorities);
+
+    /*for(i = 0; i < NUM_SPHERES; i++){
+        free(s[i]);
+    }*/
+    
+    delete_skybox(&sky);
+    delete_texture(&(perlin));
+    delete_texture(&(mat.tex));
+    delete_texture(&(aluminum.tex));
+    delete_texture(&(light.tex));
+    //delete_mesh(skull);
+    delete_bvh(&root);
+    //delete_list(&skullObj); 
+    delete_list(&priorities); 
+    delete_list(&world); 
+}
+
 void render_scene(int scene_id){
     switch(scene_id){
         case 1: cornell_box(); break;
         case 2: triangle_test(); break;
         case 3: test_skybox(); break;
+        case 4: space(); break;
     }   
 }
