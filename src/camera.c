@@ -1,6 +1,8 @@
 #include "camera.h"
+
 #include "material.h"
 #include "pdf.h"
+#include "skybox.h"
 #include "util.h"
 #include "vector3.h"
 #include <pthread.h>
@@ -15,7 +17,7 @@ typedef struct {
     pthread_mutex_t *mutex2;
 } render_info;
 
-color ray_color(ray r, int depth, const hittable_list *world, const hittable_list *priorities, color background){
+color ray_color(ray r, int depth, const hittable_list *world, const hittable_list *priorities, color background, skybox *sky){
     if(depth <= 0){
         color black;
         init(&black, 0, 0, 0);
@@ -25,7 +27,10 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
     hit_record h;
     scatter_record s;
 
-    if(!hit(world, r, 0.001, DBL_MAX, &h)) return background;
+    if(!hit(world, r, 0.001, DBL_MAX, &h)){
+        if(!sky) return background;
+        return skybox_value(sky, r);
+    }
 
     double pdf_value;
     color color_from_emmision = (*(h.mat->emit))(h.mat, r, h, h.u, h.v, h.p);
@@ -37,7 +42,7 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
     
     //skips importance sampling for specular surfaces
     if(s.skip_pdf){
-        return attenuate(s.attenuation, ray_color(s.skip_pdf_ray, depth - 1, world, priorities, background));
+        return attenuate(s.attenuation, ray_color(s.skip_pdf_ray, depth - 1, world, priorities, background, sky));
     }
 
     //mixing a pdf of important objects and the material's inherent pdf 
@@ -57,7 +62,7 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
 
 
     color color_from_scatter;
-    copy(&color_from_scatter, attenuate(s.attenuation, ray_color(bounce, depth - 1, world, priorities, background)));
+    copy(&color_from_scatter, attenuate(s.attenuation, ray_color(bounce, depth - 1, world, priorities, background, sky)));
     
     scale(&color_from_scatter, scatter_pdf / pdf_value);
     
@@ -210,7 +215,7 @@ void *render_portion(void *context){
                         ray r = get_ray(p->c, i, j, s_i, s_j);
 
                         color sampleColor;
-                        copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->priorities, p->c->background));
+                        copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->priorities, p->c->background, p->c->sky));
                         illum = illuminance(sampleColor);
                         illumSum += illum;
                         illumSqrSum += illum * illum;
@@ -232,7 +237,8 @@ void *render_portion(void *context){
             scale(&pixel_color, 1.0 / sample);
 
             pthread_mutex_lock(p->mutex2); 
-            print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
+            //print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
+            print_color(pixel_color, p->raster + 4*((j * p->c->image_width) + i));
             pthread_mutex_unlock(p->mutex2); 
         }
     }
@@ -244,14 +250,14 @@ void *render_portion(void *context){
 void render(camera *c, const hittable_list *world, const hittable_list *priorities){
     initialize(c);
     
-    FILE *img = fopen("image.ppm", "wb");
+    FILE *img = fopen("image.hdr", "wb");
     if(!img){
         fprintf(stderr, "ERROR: Unable to open image file to write to");
         return;
     }
-    fprintf(img, "P3\n %d %d\n255\n", c->image_width, c->image_height);
+    fprintf(img, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y %d +X %d\n", c->image_height, c->image_width);
 
-    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 3 * sizeof(uint8_t));
+    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 4 * sizeof(uint8_t));
 
     int i, j, height = 0;
     pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
@@ -278,10 +284,8 @@ void render(camera *c, const hittable_list *world, const hittable_list *prioriti
     }
 
     for(j = 0; j < c->image_height; j++) {
-        for(i = 0; i < c->image_width; i++){
-            uint8_t *pixel = raster + 3*((j * c->image_width) + i);
-            fprintf(img, "%d %d %d\n", pixel[r], pixel[g], pixel[b]);
-        }
+        uint8_t *line = raster + 4*(j * c->image_width);
+        fwrite(line, (4*c->image_width), 1, img);
     }
 
     free(raster);

@@ -4,6 +4,7 @@
 #include "util.h"
 #include "material.h"
 #include "hittable_list.h"
+#include "skybox.h"
 #include "pthread.h"
 #include "pdf.h"
 #include "stdint.h"
@@ -26,6 +27,7 @@ typedef struct {
     double recip_sqrt_spb;
     int max_depth;
 
+    skybox *sky;
     color background;
 
     double vfov;
