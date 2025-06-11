@@ -44,4 +44,10 @@ aabb get_rotate_box(const void *s);
 double rotate_pdf_value(const void *s, const point3 orig, const vector3 dir);
 vector3 rotate_pdf_generate(const void *s, const point3 orig);
 
+void init_rotate_z_no_pdf(rotate *r, void *hittable, fptr_is_hit hit, aabb box, double theta);
+void init_rotate_z(rotate *r, void *hittable, fptr_is_hit hit, hittable_pdf_value v, hittable_pdf_generate g, aabb box, double theta);
+bool hit_rotate_z(const void *s, ray r, double ray_tmin, double ray_tmax, hit_record *rec);
+double rotate_pdf_z_value(const void *s, const point3 orig, const vector3 dir);
+vector3 rotate_pdf_z_generate(const void *s, const point3 orig);
+
 #endif

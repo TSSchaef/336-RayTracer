@@ -47,16 +47,24 @@ color ray_color(ray r, int depth, const hittable_list *world, const hittable_lis
 
     //mixing a pdf of important objects and the material's inherent pdf 
     pdf hittable_pdf, mixture_pdf;
-    init_hittable_pdf(&hittable_pdf, priorities, h.p);
-    init_mixture_pdf(&mixture_pdf, &hittable_pdf, s.pdf_ptr);
+    // Handling if no importance sampling is used
+    if(priorities->size > 0){
+        init_hittable_pdf(&hittable_pdf, priorities, h.p);
+        init_mixture_pdf(&mixture_pdf, &hittable_pdf, s.pdf_ptr);
+    } else {
+        mixture_pdf = *(s.pdf_ptr);
+    }
 
     ray bounce;
     init_ray(&bounce, h.p, mixture_pdf.generate(mixture_pdf)); 
     pdf_value = mixture_pdf.value(mixture_pdf, bounce.dir);
-    delete_pdf(&hittable_pdf);
     delete_pdf(s.pdf_ptr);
-    delete_pdf(&mixture_pdf);
     free(s.pdf_ptr);
+
+    if(priorities->size > 0){
+        delete_pdf(&hittable_pdf);
+        delete_pdf(&mixture_pdf);
+    }
 
     double scatter_pdf = h.mat->pdf(r, h, bounce);
 
@@ -238,7 +246,7 @@ void *render_portion(void *context){
 
             pthread_mutex_lock(p->mutex2); 
             //print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
-            print_color(pixel_color, p->raster + 4*((j * p->c->image_width) + i));
+            print_color(pixel_color, p->raster + 4*((j * p->c->image_width) + i), !p->c->sky);
             pthread_mutex_unlock(p->mutex2); 
         }
     }

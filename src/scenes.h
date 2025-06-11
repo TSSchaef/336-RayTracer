@@ -15,7 +15,7 @@
 #include "util.h"
 #include "skybox.h"
 
-#define NUM_SCENES 3
+#define NUM_SCENES 4
 
 void render_scene(int scene_id);
 
