@@ -162,10 +162,10 @@ hittable_list *init_cube(point3 a, point3 b, material mat){
   init_quad(bottom, bo, dx, dz, mat);
 
   add_list(sides, top, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
-  add_list(sides, front, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
-  add_list(sides, right, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
   add_list(sides, back, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
   add_list(sides, left, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, front, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
+  add_list(sides, right, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
   add_list(sides, bottom, &hit_quad, &get_quad_box, &quad_pdf_value, &quad_pdf_generate);
 
   return sides;

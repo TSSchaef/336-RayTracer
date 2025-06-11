@@ -14,7 +14,7 @@ After cloning the repo, in order to build it place the dependencies into the /ex
 Overview
 --------
 ### Intro
-This ray tracer was originally developed for CS336 (Intro to Computer Graphics).
+This ray tracer was originally developed for CS336 (Intro to Computer Graphics). A brief report of the theory/implementation is available in 'CS336 Ray Tracer Report.pdf' (see above).
 
 ### Features 
 The ray tracer currently implements:

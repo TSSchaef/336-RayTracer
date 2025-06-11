@@ -1,6 +1,6 @@
 #include "util.h"
 
-//static __thread unsigned int seed = -1;
+//static unsigned int __thread seed = -1;
 static unsigned int seed = -1;
 
 int rnd_int(int min, int max){
