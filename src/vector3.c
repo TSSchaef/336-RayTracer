@@ -207,38 +207,58 @@ void print_color(const color c_in, uint8_t pixel[4], bool linear){
 
     //Removing any NaN's 
     if(c.e[r] != c.e[r]) c.e[r] = 0.0;
-    if(c.e[b] != c.e[b]) c.e[b] = 0.0;
     if(c.e[g] != c.e[g]) c.e[g] = 0.0;
+    if(c.e[b] != c.e[b]) c.e[b] = 0.0;
 
+    // Apply gamma correction if needed (for linear color space)
     if(linear){
-        c.e[r] = 255.999 * linear_to_gamma(c.e[r]);
-        c.e[g] = 255.999 * linear_to_gamma(c.e[g]);
-        c.e[b] = 255.999 * linear_to_gamma(c.e[b]);
-    } else {
-        c.e[r] = 255.999 * c.e[r];
-        c.e[g] = 255.999 * c.e[g];
-        c.e[b] = 255.999 * c.e[b];
+        c.e[r] = linear_to_gamma(c.e[r]);
+        c.e[g] = linear_to_gamma(c.e[g]);
+        c.e[b] = linear_to_gamma(c.e[b]);
     }
 
-    //finding exponent
-    uint8_t exp;
-    if(c.e[r] > c.e[g]){
-        if(c.e[r] > c.e[b]){
-           exp = get_exp(c.e[r]); 
-        } else {
-           exp = get_exp(c.e[b]); 
-        }
-    } else {
-        if(c.e[g] > c.e[b]){
-           exp = get_exp(c.e[g]); 
-        } else {
-           exp = get_exp(c.e[b]); 
-        }
+    // Find the maximum channel value
+    double max_val = c.e[r];
+    if(c.e[g] > max_val) max_val = c.e[g];
+    if(c.e[b] > max_val) max_val = c.e[b];
+
+    // Handle zero or very small values
+    if(max_val < 1e-32){
+        pixel[0] = 0;
+        pixel[1] = 0;
+        pixel[2] = 0;
+        pixel[3] = 0;
+        return;
     }
 
-    pixel[r] = (uint8_t) exp > 0 ? (c.e[r] / pow(2, exp - 128)) : 0;
-    pixel[g] = (uint8_t) exp > 0 ? (c.e[g] / pow(2, exp - 128)) : 0;
-    pixel[b] = (uint8_t) exp > 0 ? (c.e[b] / pow(2, exp - 128)) : 0;
-    //setting exponent
-    pixel[3] = exp;
+    // Calculate exponent: we want max_val * 256 / 2^(exp-128) to be in range [128, 256)
+    // So: 2^(exp-128) = max_val * 256 / target_value
+    // where target_value should be around 128-255 for best precision
+    int exp;
+    double multiplier = frexp(max_val, &exp) * 256.0 / max_val;
+    
+    // The exponent in RGBE format
+    // frexp returns mantissa in [0.5, 1.0) and exponent such that value = mantissa * 2^exp
+    // We want exponent biased by 128
+    exp = exp + 128;
+    
+    // Clamp exponent to valid range
+    if(exp <= 0){
+        pixel[0] = 0;
+        pixel[1] = 0;
+        pixel[2] = 0;
+        pixel[3] = 0;
+        return;
+    }
+    if(exp > 255){
+        exp = 255;
+    }
+
+    // Encode RGB values: multiply by 256 and divide by 2^(exp-128)
+    multiplier = 256.0 / pow(2.0, exp - 128);
+    
+    pixel[r] = (uint8_t)(c.e[r] * multiplier);
+    pixel[g] = (uint8_t)(c.e[g] * multiplier);
+    pixel[b] = (uint8_t)(c.e[b] * multiplier);
+    pixel[3] = (uint8_t)exp;
 }
