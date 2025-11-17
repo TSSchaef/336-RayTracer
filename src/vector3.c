@@ -201,7 +201,7 @@ static inline double linear_to_gamma(double x){
     return 0;
 }
 
-void print_color(const color c_in, uint8_t pixel[3], bool linear){
+void print_color(const color c_in, uint8_t pixel[4], bool linear){
     color c;
     copy(&c, c_in);
 

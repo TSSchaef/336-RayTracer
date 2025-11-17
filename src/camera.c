@@ -5,17 +5,7 @@
 #include "skybox.h"
 #include "util.h"
 #include "vector3.h"
-#include <pthread.h>
-
-typedef struct {
-    const camera *c;
-    const hittable_list *world;
-    const hittable_list *priorities;
-    uint8_t *raster;
-    int *height;
-    pthread_mutex_t *mutex1;
-    pthread_mutex_t *mutex2;
-} render_info;
+#include <mpi.h>
 
 color ray_color(ray r, int depth, const hittable_list *world, const hittable_list *priorities, color background, skybox *sky){
     if(depth <= 0){
@@ -193,37 +183,54 @@ ray get_ray(const camera *c, int i, int j, int s_i, int s_j){
     return r;
 }
 
-void *render_portion(void *context){
-    render_info *p = (render_info *) context;
+void render(camera *c, const hittable_list *world, const hittable_list *priorities){
+    int rank, num_processes;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
+    
+    initialize(c);
+    
+    // Calculate work distribution - each process gets a contiguous chunk of rows
+    int rows_per_process = c->image_height / num_processes;
+    int remainder = c->image_height % num_processes;
+    
+    int start_row = rank * rows_per_process + (rank < remainder ? rank : remainder);
+    int end_row = start_row + rows_per_process + (rank < remainder ? 1 : 0);
+    int local_rows = end_row - start_row;
+    
+    // Allocate local buffer for this process's rows
+    uint8_t *local_raster = (uint8_t *) malloc(local_rows * c->image_width * 4 * sizeof(uint8_t));
+    
+    // Render assigned rows
     color pixel_color;
-    init(&pixel_color, 0, 0, 0);
     int i, j, s_i, s_j, sample;
     double illum, illumSum, illumSqrSum, sigSqr;
     
-    while(1){
-        pthread_mutex_lock(p->mutex1); 
-            j = *(p->height);
-            *(p->height) += 1;
-        pthread_mutex_unlock(p->mutex1);
-        fprintf(stderr, "\rScanlines remaining: %d        ", p->c->image_height + NUM_THREADS - j);
-        fflush(stderr);
-
-        if(j >= p->c->image_height) break;
-
-
-        for(i = 0; i < p->c->image_width; i++){
+    for(j = start_row; j < end_row; j++){
+        if(rank == 0){
+            int local_j = j - start_row;
+            double percent = (100.0 * local_j) / local_rows;
+            fprintf(stderr, "\rRendering: %.1f%%        ", percent);
+            fflush(stderr);
+        }
+        
+        int local_j = j - start_row; // Index into local_raster
+        
+        for(i = 0; i < c->image_width; i++){
+            init(&pixel_color, 0, 0, 0);
             illumSum = 0;
             illumSqrSum = 0;
-            for(sample = 1; sample <= p->c->samples_per_pixel; ){
+            
+            for(sample = 1; sample <= c->samples_per_pixel; ){
                 
                 //doing batch of stratified sampling
                 //checking for pixel illuminance convergence after each batch
-                for(s_j = 0; s_j < p->c->sqrt_spb; s_j++){
-                    for(s_i = 0; s_i < p->c->sqrt_spb; s_i++){
-                        ray r = get_ray(p->c, i, j, s_i, s_j);
+                for(s_j = 0; s_j < c->sqrt_spb; s_j++){
+                    for(s_i = 0; s_i < c->sqrt_spb; s_i++){
+                        ray r = get_ray(c, i, j, s_i, s_j);
 
                         color sampleColor;
-                        copy(&sampleColor, ray_color(r, p->c->max_depth, p->world, p->priorities, p->c->background, p->c->sky));
+                        copy(&sampleColor, ray_color(r, c->max_depth, world, priorities, c->background, c->sky));
                         illum = illuminance(sampleColor);
                         illumSum += illum;
                         illumSqrSum += illum * illum;
@@ -243,61 +250,57 @@ void *render_portion(void *context){
             }
 
             scale(&pixel_color, 1.0 / sample);
-
-            pthread_mutex_lock(p->mutex2); 
-            //print_color(pixel_color, p->raster + 3*((j * p->c->image_width) + i));
-            print_color(pixel_color, p->raster + 4*((j * p->c->image_width) + i), !p->c->sky);
-            pthread_mutex_unlock(p->mutex2); 
+            print_color(pixel_color, local_raster + 4*((local_j * c->image_width) + i), !c->sky);
         }
     }
-
-    //unused return value necessary for thread syntax
-    return NULL;
-}
-
-void render(camera *c, const hittable_list *world, const hittable_list *priorities){
-    initialize(c);
     
-    FILE *img = fopen("image.hdr", "wb");
-    if(!img){
-        fprintf(stderr, "ERROR: Unable to open image file to write to");
-        return;
-    }
-    fprintf(img, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y %d +X %d\n", c->image_height, c->image_width);
-
-    uint8_t *raster = (uint8_t *) malloc(c->image_height * c->image_width * 4 * sizeof(uint8_t));
-
-    int i, j, height = 0;
-    pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
-    render_info *contexts[NUM_THREADS];
-    pthread_t threads[NUM_THREADS];
-    for(i = 0; i < NUM_THREADS; i++){
-        contexts[i] = (render_info *) malloc(sizeof(render_info));
-        contexts[i]->c = c;
-        contexts[i]->world = world;
-        contexts[i]->priorities = priorities;
-        contexts[i]->height = &height;
-        contexts[i]->raster = raster;
-        contexts[i]->mutex1 = &mutex1;
-        contexts[i]->mutex2 = &mutex2;
-
-        pthread_create(&threads[i], NULL, &render_portion, contexts[i]);
+    // Rank 0 gathers all data and writes the file
+    if(rank == 0){
+        fprintf(stderr, "\rRendering: 100.0%%        \n");
+        fprintf(stderr, "Aggregating results...\n");
+        fflush(stderr);
+        
+        uint8_t *full_raster = (uint8_t *) malloc(c->image_height * c->image_width * 4 * sizeof(uint8_t));
+        
+        // Copy rank 0's data
+        memcpy(full_raster, local_raster, local_rows * c->image_width * 4 * sizeof(uint8_t));
+        
+        // Gather data from other processes
+        for(int src = 1; src < num_processes; src++){
+            int src_rows_per_process = c->image_height / num_processes;
+            int src_start_row = src * src_rows_per_process + (src < remainder ? src : remainder);
+            int src_local_rows = src_rows_per_process + (src < remainder ? 1 : 0);
+            
+            MPI_Recv(full_raster + 4 * src_start_row * c->image_width,
+                     src_local_rows * c->image_width * 4,
+                     MPI_UNSIGNED_CHAR,
+                     src,
+                     0,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+        }
+        
+        // Write the image file
+        FILE *img = fopen("image.hdr", "wb");
+        if(!img){
+            fprintf(stderr, "ERROR: Unable to open image file to write to\n");
+        } else {
+            fprintf(img, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y %d +X %d\n", c->image_height, c->image_width);
+            fwrite(full_raster, 4 * c->image_height * c->image_width, 1, img);
+            fclose(img);
+            fprintf(stderr, "Done.                       \n");
+        }
+        
+        free(full_raster);
+    } else {
+        // Send data to rank 0
+        MPI_Send(local_raster,
+                 local_rows * c->image_width * 4,
+                 MPI_UNSIGNED_CHAR,
+                 0,
+                 0,
+                 MPI_COMM_WORLD);
     }
     
-    for(i = 0; i < NUM_THREADS; i++){
-        //waiting for all threads to finish
-        pthread_join(threads[i], NULL);
-        free(contexts[i]);
-    }
-
-    for(j = 0; j < c->image_height; j++) {
-        uint8_t *line = raster + 4*(j * c->image_width);
-        fwrite(line, (4*c->image_width), 1, img);
-    }
-
-    free(raster);
-    fclose(img);
-
-    fprintf(stderr, "\rDone.                       \n");
+    free(local_raster);
 }

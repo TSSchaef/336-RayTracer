@@ -4,12 +4,12 @@ DEV-BINARY=ray-tracer-dev
 CODEDIRS=src
 INCDIRS=src ext 
 
-CC=gcc
+CC=mpicc
 #use DEV options for development
 #PROD for production
 DEV-OPT=-O0
-PROD-OPT=-O3
-LIBFLAGS=-lm -lpthread
+PROD-OPT=-Wall -O3 -march=native -ffast-math
+LIBFLAGS=-lm
 DEPFLAGS=-MP -MD
 DEV-CFLAGS=-Wall -Werror -g $(foreach D, $(INCDIRS), -I$(D)) $(DEV-OPT) $(DEPFLAGS)
 PROD-CFLAGS=$(foreach D, $(INCDIRS), -I$(D)) $(PROD-OPT) $(DEPFLAGS)

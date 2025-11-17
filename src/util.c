@@ -1,7 +1,12 @@
 #include "util.h"
 
-//static __thread unsigned int seed = -1;
 static unsigned int seed = -1;
+
+void init_random_seed(int rank){
+    // Initialize with different seed for each MPI process
+    // Using time + rank ensures different random sequences per process
+    seed = time(NULL) + rank * 12345;
+}
 
 int rnd_int(int min, int max){
     if(seed == -1){
@@ -20,4 +25,3 @@ double rnd_double(){
 double rnd_dbl(double min, double max){
     return (min + (max - min) * rnd_double());
 }
-

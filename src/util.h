@@ -9,11 +9,10 @@
 #include "vector3.h"
 #include "ray.h"
 
-#define NUM_THREADS 32
-
 #define PI 3.1415926535897932385
 #define DEG_TO_RAD(deg) ((deg * PI) / 180.0)
 
+void init_random_seed(int rank);
 int rnd_int(int min, int max);
 double rnd_double();
 double rnd_dbl(double min, double max);

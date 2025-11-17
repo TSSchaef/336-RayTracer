@@ -104,7 +104,7 @@ void cornell_box(){
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 1200;
-    cam.samples_per_pixel = 3000;
+    cam.samples_per_pixel = 10;
 
     init(&(cam.background), 0, 0, 0);
     cam.sky = NULL;
