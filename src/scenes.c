@@ -179,8 +179,8 @@ void triangle_test(){
     //initializing camera
     camera cam;
     cam.aspect_ratio = 1.0;
-    cam.image_width = 2000;
-    cam.samples_per_pixel = 2000;
+    cam.image_width = 200;
+    cam.samples_per_pixel = 20;
     init(&(cam.background), 0, 0, 0);
     cam.max_depth = 50;
     cam.vfov = 70;
@@ -295,7 +295,7 @@ void test_skybox(){
     camera cam;
     cam.aspect_ratio = 1.0;
     cam.image_width = 2000;
-    cam.samples_per_pixel = 3500;
+    cam.samples_per_pixel = 35;//00;
 
     skybox sky;
     init_skybox(&sky, "relic.hdr");
@@ -456,11 +456,85 @@ void space(){
     delete_list(&world); 
 }
 
+void teapot(){
+    hittable_list world;
+    init_list(&world);
+    
+    color r, red, l;
+    init(&l, 15.0, 15.0, 15.0);
+    init(&r, 0.9, 0.9, 0.75);
+    init(&red, 100.0, 0, 0);
+
+    material dif_red_light, dif_light, mat;
+
+    init_lambertian(&mat, r);
+    init_diffuse_light(&dif_red_light, red);
+    init_diffuse_light(&dif_light, l);
+
+    point3 center1, center2;
+    init(&center1, 0, 4, 11);
+    init(&center2, -1, 3.5, 0.5);
+    sphere s1, s2;
+    init_sphere(&s1, center1, 5.5, dif_light);
+    init_sphere(&s2, center2, 0.5, dif_red_light);
+
+    mesh *teapot = load_mesh("teapot.obj", mat);
+    if(!teapot){
+        delete_texture(&(mat.tex));
+        delete_list(&world); 
+        return;
+    }
+
+    add_list_no_pdf(&world, teapot->bvh, &hit_bvh, &get_bvh_box);
+    add_list_no_pdf(&world, &s1, &hit_sphere, &get_sphere_box);
+    add_list_no_pdf(&world, &s2, &hit_sphere, &get_sphere_box);
+
+    hittable_list priorities;
+    init_list(&priorities);
+    add_list(&world, &s1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&world, &s2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    
+    //initializing camera
+    camera cam;
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 2000;
+    cam.samples_per_pixel = 20;
+
+    init(&(cam.background), 0, 0, 0);
+    cam.max_depth = 50;
+    cam.vfov = 70;
+    cam.sky = NULL;
+    
+    point3 f, a, v;
+    
+    //teapot camera
+    init(&f, 0, 4, 5);
+    init(&a, 0.27, 1.25, 0);
+    init(&v, 0, 1, 0);
+    
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+
+    cam.defocus_angle = 0;
+    cam.focus_dist = 2;
+
+    render(&cam, &world, &priorities);
+    
+    delete_texture(&(mat.tex));
+    delete_texture(&(dif_red_light.tex));
+    delete_texture(&(dif_light.tex));
+    delete_mesh(teapot);
+    delete_list(&priorities); 
+    delete_list(&world); 
+}
+
 void render_scene(int scene_id){
     switch(scene_id){
         case 1: cornell_box(); break;
         case 2: triangle_test(); break;
         case 3: test_skybox(); break;
         case 4: space(); break;
+        case 5: teapot(); break;
     }   
 }
