@@ -529,6 +529,613 @@ void teapot(){
     delete_list(&world); 
 }
 
+
+void cinematic_room(){
+    hittable_list world, priorities;
+    init_list(&world);
+    init_list(&priorities);
+    
+    // Colors
+    color wall_color, floor_color, trim_color, dark_trim_color, glass_color, sky_bg;
+    color warm_light, cool_light, cloud_white, cloud_gray, cloud_light;
+    color ground_green, grass_green, rock_gray, tree_green, trunk_brown;
+    
+    init(&wall_color, 0.85, 0.82, 0.78);      // Warm beige walls
+    init(&floor_color, 0.35, 0.25, 0.20);     // Dark wood floor (fallback)
+    init(&trim_color, 0.95, 0.94, 0.92);      // Off-white trim
+    init(&dark_trim_color, 0.25, 0.20, 0.18); // Dark contrasting trim/baseboards
+    init(&glass_color, 0.88, 0.90, 0.92);     // Slight blue tint for glass
+    init(&sky_bg, 0.6, 0.7, 0.85);            // Soft blue sky
+    init(&warm_light, 15.0, 13.0, 10.0);      // Brighter warm sunlight
+    init(&cool_light, 10.0, 11.0, 13.0);      // Brighter cool sky light
+    init(&cloud_white, 1.0, 1.0, 1.0);        // Pure white for clouds
+    init(&cloud_gray, 0.85, 0.87, 0.90);      // Light gray clouds
+    init(&cloud_light, 0.95, 0.96, 0.98);     // Very light clouds
+    init(&ground_green, 0.2, 0.3, 0.15);      // Dark ground green
+    init(&grass_green, 0.3, 0.5, 0.2);        // Bright grass
+    init(&rock_gray, 0.4, 0.4, 0.42);         // Gray rocks
+    init(&tree_green, 0.15, 0.25, 0.12);      // Dark pine green
+    init(&trunk_brown, 0.3, 0.2, 0.15);       // Tree trunk brown
+    
+    // Textures
+    texture wallpaper_tex, floor_tex;
+    init_image_tex(&wallpaper_tex, "wallpaper.jpg");
+    init_image_tex(&floor_tex, "floor.jpg");
+    
+    // Materials
+    material wall_mat, floor_mat, trim_mat, dark_trim_mat, glass_mat;
+    material warm_light_mat, cool_light_mat;
+    material cloud_white_mat, cloud_gray_mat, cloud_light_mat;
+    material wallpaper_mat, floor_texture_mat;
+    material ground_mat, grass_mat, rock_mat, tree_mat, trunk_mat;
+    
+    init_lambertian(&wall_mat, wall_color);
+    init_lambertian(&floor_mat, floor_color);
+    init_lambertian_tex(&floor_texture_mat, floor_tex);
+    init_lambertian_tex(&wallpaper_mat, wallpaper_tex);
+    init_lambertian(&trim_mat, trim_color);
+    init_lambertian(&dark_trim_mat, dark_trim_color);
+    init_dielectric(&glass_mat, 1.5);
+    init_diffuse_light(&warm_light_mat, warm_light);
+    init_diffuse_light(&cool_light_mat, cool_light);
+    init_isotropic(&cloud_white_mat, cloud_white);
+    init_isotropic(&cloud_gray_mat, cloud_gray);
+    init_isotropic(&cloud_light_mat, cloud_light);
+    init_lambertian(&ground_mat, ground_green);
+    init_lambertian(&grass_mat, grass_green);
+    init_lambertian(&rock_mat, rock_gray);
+    init_lambertian(&tree_mat, tree_green);
+    init_lambertian(&trunk_mat, trunk_brown);
+    
+    // Room dimensions
+    double room_width = 800;
+    double room_height = 350;
+    double room_depth = 600;
+    
+    // Floor with wood texture (tiled 3x3)
+    int floor_i, floor_j;
+    double floor_tile_width = room_width / 3.0;
+    double floor_tile_depth = room_depth / 3.0;
+    quad floor_tiles[9];
+    int floor_idx = 0;
+    for(floor_i = 0; floor_i < 3; floor_i++){
+        for(floor_j = 0; floor_j < 3; floor_j++){
+            point3 floor_Q;
+            vector3 floor_u, floor_v;
+            init(&floor_Q, floor_i * floor_tile_width, 0, floor_j * floor_tile_depth);
+            init(&floor_u, floor_tile_width, 0, 0);
+            init(&floor_v, 0, 0, floor_tile_depth);
+            init_quad(&floor_tiles[floor_idx], floor_Q, floor_u, floor_v, floor_texture_mat);
+            add_list_no_pdf(&world, &floor_tiles[floor_idx], &hit_quad, &get_quad_box);
+            floor_idx++;
+        }
+    }
+    
+    // Ceiling
+    quad ceiling;
+    point3 ceil_Q;
+    vector3 ceil_u, ceil_v;
+    init(&ceil_Q, 0, room_height, 0);
+    init(&ceil_u, room_width, 0, 0);
+    init(&ceil_v, 0, 0, room_depth);
+    init_quad(&ceiling, ceil_Q, ceil_u, ceil_v, wall_mat);
+    add_list_no_pdf(&world, &ceiling, &hit_quad, &get_quad_box);
+    
+    // Window dimensions
+    double window_width = 300;
+    double window_height = 200;
+    double window_bottom = 100;
+    double window_left = (room_width - window_width) / 2.0;
+    double frame_thickness = 8;
+    
+    // Wallpaper strip dimensions (centered, taller)
+    double wallpaper_strip_height = 120;
+    double wallpaper_strip_bottom = (room_height - wallpaper_strip_height) / 2.0;
+    
+    // Left wall with wallpaper strip (tiled horizontally)
+    // Bottom section
+    quad left_wall_bottom;
+    point3 lwall_bot_Q;
+    vector3 lwall_bot_u, lwall_bot_v;
+    init(&lwall_bot_Q, 0, 0, 0);
+    init(&lwall_bot_u, 0, wallpaper_strip_bottom, 0);
+    init(&lwall_bot_v, 0, 0, room_depth);
+    init_quad(&left_wall_bottom, lwall_bot_Q, lwall_bot_u, lwall_bot_v, wall_mat);
+    add_list_no_pdf(&world, &left_wall_bottom, &hit_quad, &get_quad_box);
+    
+    // Wallpaper strip (tiled horizontally)
+    int left_wall_paper_tiles = (int)(room_depth / wallpaper_strip_height) + 1;
+    quad *left_wall_papers = malloc(left_wall_paper_tiles * sizeof(quad));
+    int lwp_idx;
+    for(lwp_idx = 0; lwp_idx < left_wall_paper_tiles; lwp_idx++){
+        point3 lwall_paper_Q;
+        vector3 lwall_paper_u, lwall_paper_v;
+        init(&lwall_paper_Q, 0, wallpaper_strip_bottom, lwp_idx * wallpaper_strip_height);
+        init(&lwall_paper_u, 0, wallpaper_strip_height, 0);
+        init(&lwall_paper_v, 0, 0, wallpaper_strip_height);
+        init_quad(&left_wall_papers[lwp_idx], lwall_paper_Q, lwall_paper_u, lwall_paper_v, wallpaper_mat);
+        add_list_no_pdf(&world, &left_wall_papers[lwp_idx], &hit_quad, &get_quad_box);
+    }
+    
+    // Top section
+    quad left_wall_top;
+    point3 lwall_top_Q;
+    vector3 lwall_top_u, lwall_top_v;
+    init(&lwall_top_Q, 0, wallpaper_strip_bottom + wallpaper_strip_height, 0);
+    init(&lwall_top_u, 0, room_height - wallpaper_strip_bottom - wallpaper_strip_height, 0);
+    init(&lwall_top_v, 0, 0, room_depth);
+    init_quad(&left_wall_top, lwall_top_Q, lwall_top_u, lwall_top_v, wall_mat);
+    add_list_no_pdf(&world, &left_wall_top, &hit_quad, &get_quad_box);
+    
+    // Right wall with wallpaper strip (tiled horizontally)
+    // Bottom section
+    quad right_wall_bottom;
+    point3 rwall_bot_Q;
+    vector3 rwall_bot_u, rwall_bot_v;
+    init(&rwall_bot_Q, room_width, 0, 0);
+    init(&rwall_bot_u, 0, wallpaper_strip_bottom, 0);
+    init(&rwall_bot_v, 0, 0, room_depth);
+    init_quad(&right_wall_bottom, rwall_bot_Q, rwall_bot_u, rwall_bot_v, wall_mat);
+    add_list_no_pdf(&world, &right_wall_bottom, &hit_quad, &get_quad_box);
+    
+    // Wallpaper strip (tiled horizontally)
+    quad *right_wall_papers = malloc(left_wall_paper_tiles * sizeof(quad));
+    int rwp_idx;
+    for(rwp_idx = 0; rwp_idx < left_wall_paper_tiles; rwp_idx++){
+        point3 rwall_paper_Q;
+        vector3 rwall_paper_u, rwall_paper_v;
+        init(&rwall_paper_Q, room_width, wallpaper_strip_bottom, rwp_idx * wallpaper_strip_height);
+        init(&rwall_paper_u, 0, wallpaper_strip_height, 0);
+        init(&rwall_paper_v, 0, 0, wallpaper_strip_height);
+        init_quad(&right_wall_papers[rwp_idx], rwall_paper_Q, rwall_paper_u, rwall_paper_v, wallpaper_mat);
+        add_list_no_pdf(&world, &right_wall_papers[rwp_idx], &hit_quad, &get_quad_box);
+    }
+    
+    // Top section
+    quad right_wall_top;
+    point3 rwall_top_Q;
+    vector3 rwall_top_u, rwall_top_v;
+    init(&rwall_top_Q, room_width, wallpaper_strip_bottom + wallpaper_strip_height, 0);
+    init(&rwall_top_u, 0, room_height - wallpaper_strip_bottom - wallpaper_strip_height, 0);
+    init(&rwall_top_v, 0, 0, room_depth);
+    init_quad(&right_wall_top, rwall_top_Q, rwall_top_u, rwall_top_v, wall_mat);
+    add_list_no_pdf(&world, &right_wall_top, &hit_quad, &get_quad_box);
+    
+    // Back wall (behind camera, with light sources) - plain no wallpaper
+    quad back_wall;
+    point3 bwall_Q;
+    vector3 bwall_u, bwall_v;
+    init(&bwall_Q, 0, 0, 0);
+    init(&bwall_u, room_width, 0, 0);
+    init(&bwall_v, 0, room_height, 0);
+    init_quad(&back_wall, bwall_Q, bwall_u, bwall_v, wall_mat);
+    add_list_no_pdf(&world, &back_wall, &hit_quad, &get_quad_box);
+    
+    // Hidden light sources behind camera (brighter now)
+    sphere hidden_light1, hidden_light2;
+    point3 light1_pos, light2_pos;
+    init(&light1_pos, 200, 280, -50);
+    init(&light2_pos, 600, 280, -50);
+    init_sphere(&hidden_light1, light1_pos, 40, warm_light_mat);
+    init_sphere(&hidden_light2, light2_pos, 40, cool_light_mat);
+    add_list(&world, &hidden_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&world, &hidden_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &hidden_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &hidden_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    
+    // Simple window pane
+    quad window_pane;
+    point3 win_Q;
+    vector3 win_u, win_v;
+    init(&win_Q, window_left, window_bottom, room_depth);
+    init(&win_u, window_width, 0, 0);
+    init(&win_v, 0, window_height, 0);
+    init_quad(&window_pane, win_Q, win_u, win_v, glass_mat);
+    add_list_no_pdf(&world, &window_pane, &hit_quad, &get_quad_box);
+    
+    // Window frame - dark contrasting color
+    point3 win_frame_top_p1, win_frame_top_p2;
+    init(&win_frame_top_p1, window_left - frame_thickness, window_bottom + window_height, room_depth - frame_thickness);
+    init(&win_frame_top_p2, window_left + window_width + frame_thickness, window_bottom + window_height + frame_thickness, room_depth + frame_thickness);
+    hittable_list *window_frame_top = init_cube(win_frame_top_p1, win_frame_top_p2, dark_trim_mat);
+    add_list_no_pdf(&world, window_frame_top, &hit, &get_list_box);
+    
+    point3 win_frame_bottom_p1, win_frame_bottom_p2;
+    init(&win_frame_bottom_p1, window_left - frame_thickness, window_bottom - frame_thickness*2, room_depth - frame_thickness);
+    init(&win_frame_bottom_p2, window_left + window_width + frame_thickness, window_bottom, room_depth + frame_thickness);
+    hittable_list *window_frame_bottom = init_cube(win_frame_bottom_p1, win_frame_bottom_p2, dark_trim_mat);
+    add_list_no_pdf(&world, window_frame_bottom, &hit, &get_list_box);
+    
+    point3 win_frame_left_p1, win_frame_left_p2;
+    init(&win_frame_left_p1, window_left - frame_thickness, window_bottom, room_depth - frame_thickness);
+    init(&win_frame_left_p2, window_left, window_bottom + window_height, room_depth + frame_thickness);
+    hittable_list *window_frame_left = init_cube(win_frame_left_p1, win_frame_left_p2, dark_trim_mat);
+    add_list_no_pdf(&world, window_frame_left, &hit, &get_list_box);
+    
+    point3 win_frame_right_p1, win_frame_right_p2;
+    init(&win_frame_right_p1, window_left + window_width, window_bottom, room_depth - frame_thickness);
+    init(&win_frame_right_p2, window_left + window_width + frame_thickness, window_bottom + window_height, room_depth + frame_thickness);
+    hittable_list *window_frame_right = init_cube(win_frame_right_p1, win_frame_right_p2, dark_trim_mat);
+    add_list_no_pdf(&world, window_frame_right, &hit, &get_list_box);
+    
+    // Baseboards (contrasting dark color)
+    double baseboard_height = 15;
+    double baseboard_depth = 3;
+    
+    point3 left_base_p1, left_base_p2;
+    init(&left_base_p1, 0, 0, 0);
+    init(&left_base_p2, baseboard_depth, baseboard_height, room_depth);
+    hittable_list *left_baseboard = init_cube(left_base_p1, left_base_p2, dark_trim_mat);
+    add_list_no_pdf(&world, left_baseboard, &hit, &get_list_box);
+    
+    point3 right_base_p1, right_base_p2;
+    init(&right_base_p1, room_width - baseboard_depth, 0, 0);
+    init(&right_base_p2, room_width, baseboard_height, room_depth);
+    hittable_list *right_baseboard = init_cube(right_base_p1, right_base_p2, dark_trim_mat);
+    add_list_no_pdf(&world, right_baseboard, &hit, &get_list_box);
+    
+    point3 back_base_p1, back_base_p2;
+    init(&back_base_p1, 0, 0, 0);
+    init(&back_base_p2, room_width, baseboard_height, baseboard_depth);
+    hittable_list *back_baseboard = init_cube(back_base_p1, back_base_p2, dark_trim_mat);
+    add_list_no_pdf(&world, back_baseboard, &hit, &get_list_box);
+    
+    // Front baseboard - continuous all the way across
+    point3 front_base_p1, front_base_p2;
+    init(&front_base_p1, 0, 0, room_depth - baseboard_depth);
+    init(&front_base_p2, room_width, baseboard_height, room_depth);
+    hittable_list *front_baseboard = init_cube(front_base_p1, front_base_p2, dark_trim_mat);
+    add_list_no_pdf(&world, front_baseboard, &hit, &get_list_box);
+    
+    // Wall sections around window with wallpaper strips
+    // Left wall section - bottom plain
+    quad left_wall_section_bottom;
+    point3 lwsec_bot_Q;
+    vector3 lwsec_bot_u, lwsec_bot_v;
+    init(&lwsec_bot_Q, 0, 0, room_depth);
+    init(&lwsec_bot_u, window_left - frame_thickness, 0, 0);
+    init(&lwsec_bot_v, 0, wallpaper_strip_bottom, 0);
+    init_quad(&left_wall_section_bottom, lwsec_bot_Q, lwsec_bot_u, lwsec_bot_v, wall_mat);
+    add_list_no_pdf(&world, &left_wall_section_bottom, &hit_quad, &get_quad_box);
+    
+    // Left wallpaper section (tiled horizontally)
+    double left_section_width = window_left - frame_thickness;
+    int left_section_tiles = (int)(left_section_width / wallpaper_strip_height) + 1;
+    quad *left_section_papers = malloc(left_section_tiles * sizeof(quad));
+    int lsp_idx;
+    for(lsp_idx = 0; lsp_idx < left_section_tiles - 1; lsp_idx++){
+        point3 lsec_paper_Q;
+        vector3 lsec_paper_u, lsec_paper_v;
+        init(&lsec_paper_Q, lsp_idx * wallpaper_strip_height , wallpaper_strip_bottom, room_depth);
+        init(&lsec_paper_u, wallpaper_strip_height, 0, 0);
+        init(&lsec_paper_v, 0, wallpaper_strip_height, 0);
+        init_quad(&left_section_papers[lsp_idx], lsec_paper_Q, lsec_paper_u, lsec_paper_v, wallpaper_mat);
+        add_list_no_pdf(&world, &left_section_papers[lsp_idx], &hit_quad, &get_quad_box);
+    }
+
+    //Adding last strip to fit exactly
+    point3 lsec_paper_Q;
+    vector3 lsec_paper_u, lsec_paper_v;
+    init(&lsec_paper_Q, lsp_idx * wallpaper_strip_height , wallpaper_strip_bottom, room_depth);
+    // TO DO re-write to not be a constant
+    init(&lsec_paper_u, 12, 0, 0);
+    init(&lsec_paper_v, 0, wallpaper_strip_height, 0);
+    init_quad(&left_section_papers[lsp_idx], lsec_paper_Q, lsec_paper_u, lsec_paper_v, wallpaper_mat);
+    add_list_no_pdf(&world, &left_section_papers[lsp_idx], &hit_quad, &get_quad_box);
+
+
+
+    
+    // Left top plain
+    quad left_wall_section_top;
+    point3 lwsec_top_Q;
+    vector3 lwsec_top_u, lwsec_top_v;
+    init(&lwsec_top_Q, 0, wallpaper_strip_bottom + wallpaper_strip_height, room_depth);
+    init(&lwsec_top_u, window_left - frame_thickness, 0, 0);
+    init(&lwsec_top_v, 0, room_height - wallpaper_strip_bottom - wallpaper_strip_height, 0);
+    init_quad(&left_wall_section_top, lwsec_top_Q, lwsec_top_u, lwsec_top_v, wall_mat);
+    add_list_no_pdf(&world, &left_wall_section_top, &hit_quad, &get_quad_box);
+    
+    // Right wall section - bottom plain
+    double right_section_width = room_width - window_left - window_width - frame_thickness;
+    
+    quad right_wall_section_bottom;
+    point3 rwsec_bot_Q;
+    vector3 rwsec_bot_u, rwsec_bot_v;
+    init(&rwsec_bot_Q, window_left + window_width + frame_thickness, 0, room_depth);
+    init(&rwsec_bot_u, right_section_width, 0, 0);
+    init(&rwsec_bot_v, 0, wallpaper_strip_bottom, 0);
+    init_quad(&right_wall_section_bottom, rwsec_bot_Q, rwsec_bot_u, rwsec_bot_v, wall_mat);
+    add_list_no_pdf(&world, &right_wall_section_bottom, &hit_quad, &get_quad_box);
+    
+    // Right wallpaper section
+    int right_section_tiles = (int)(right_section_width / wallpaper_strip_height) + 1;
+    quad *right_section_papers = malloc(right_section_tiles * sizeof(quad));
+    int rsp_idx;
+    for(rsp_idx = 0; rsp_idx < right_section_tiles; rsp_idx++){
+        point3 rsec_paper_Q;
+        vector3 rsec_paper_u, rsec_paper_v;
+        init(&rsec_paper_Q, window_left + window_width + frame_thickness + rsp_idx * wallpaper_strip_height, wallpaper_strip_bottom, room_depth);
+        init(&rsec_paper_u, wallpaper_strip_height, 0, 0);
+        init(&rsec_paper_v, 0, wallpaper_strip_height, 0);
+        init_quad(&right_section_papers[rsp_idx], rsec_paper_Q, rsec_paper_u, rsec_paper_v, wallpaper_mat);
+        add_list_no_pdf(&world, &right_section_papers[rsp_idx], &hit_quad, &get_quad_box);
+    }
+    
+    // Right top plain
+    quad right_wall_section_top;
+    point3 rwsec_top_Q;
+    vector3 rwsec_top_u, rwsec_top_v;
+    init(&rwsec_top_Q, window_left + window_width + frame_thickness, wallpaper_strip_bottom + wallpaper_strip_height, room_depth);
+    init(&rwsec_top_u, right_section_width, 0, 0);
+    init(&rwsec_top_v, 0, room_height - wallpaper_strip_bottom - wallpaper_strip_height, 0);
+    init_quad(&right_wall_section_top, rwsec_top_Q, rwsec_top_u, rwsec_top_v, wall_mat);
+    add_list_no_pdf(&world, &right_wall_section_top, &hit_quad, &get_quad_box);
+    
+    // Above window wall section - plain
+    quad above_window;
+    point3 awin_Q;
+    vector3 awin_u, awin_v;
+    init(&awin_Q, window_left - frame_thickness, window_bottom + window_height + frame_thickness, room_depth);
+    init(&awin_u, window_width + frame_thickness*2, 0, 0);
+    init(&awin_v, 0, room_height - window_bottom - window_height - frame_thickness, 0);
+    init_quad(&above_window, awin_Q, awin_u, awin_v, wall_mat);
+    add_list_no_pdf(&world, &above_window, &hit_quad, &get_quad_box);
+    
+    // Below window wall section - plain
+    quad below_window;
+    point3 blwin_Q;
+    vector3 blwin_u, blwin_v;
+    init(&blwin_Q, window_left - frame_thickness, 0, room_depth);
+    init(&blwin_u, window_width + frame_thickness*2, 0, 0);
+    init(&blwin_v, 0, window_bottom - frame_thickness*2, 0);
+    init_quad(&below_window, blwin_Q, blwin_u, blwin_v, wall_mat);
+    add_list_no_pdf(&world, &below_window, &hit_quad, &get_quad_box);
+    
+    // Outdoor scene - ground plane (far away)
+    quad ground;
+    point3 ground_Q;
+    vector3 ground_u, ground_v;
+    init(&ground_Q, -2000, 0, room_depth + 500);
+    init(&ground_u, 5000, 0, 0);
+    init(&ground_v, 0, 0, 5000);
+    init_quad(&ground, ground_Q, ground_u, ground_v, ground_mat);
+    add_list_no_pdf(&world, &ground, &hit_quad, &get_quad_box);
+    
+    // Outdoor light sources (positioned high and to sides)
+    sphere outdoor_light1, outdoor_light2, outdoor_light3;
+    point3 out_light1_pos, out_light2_pos, out_light3_pos;
+    init(&out_light1_pos, room_width / 2.0 - 500, 600, room_depth + 300);
+    init(&out_light2_pos, room_width / 2.0 + 500, 600, room_depth + 300);
+    init(&out_light3_pos, room_width / 2.0, 700, room_depth + 200);
+    init_sphere(&outdoor_light1, out_light1_pos, 50, warm_light_mat);
+    init_sphere(&outdoor_light2, out_light2_pos, 50, warm_light_mat);
+    init_sphere(&outdoor_light3, out_light3_pos, 60, cool_light_mat);
+    add_list(&world, &outdoor_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&world, &outdoor_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&world, &outdoor_light3, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &outdoor_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &outdoor_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &outdoor_light3, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    
+    // Small rocks scattered on ground (very small, far away)
+    int num_rocks = 40;
+    sphere *rocks = malloc(num_rocks * sizeof(sphere));
+    int rock_i;
+    for(rock_i = 0; rock_i < num_rocks; rock_i++){
+        point3 rock_pos;
+        init(&rock_pos, 
+             rnd_dbl(room_width / 2.0 - 300, room_width / 2.0 + 300),
+             rnd_dbl(0.2, 0.5),
+             rnd_dbl(room_depth + 600, room_depth + 1200));
+        init_sphere(&rocks[rock_i], rock_pos, rnd_dbl(0.2, 0.6), rock_mat);
+        add_list_no_pdf(&world, &rocks[rock_i], &hit_sphere, &get_sphere_box);
+    }
+    
+    // Grass blades (tiny triangles, far away)
+    int num_grass = 80;
+    triangle *grass_blades = malloc(num_grass * sizeof(triangle));
+    int grass_i;
+    for(grass_i = 0; grass_i < num_grass; grass_i++){
+        point3 grass_base, grass_left, grass_right;
+        double grass_x = rnd_dbl(room_width / 2.0 - 300, room_width / 2.0 + 300);
+        double grass_z = rnd_dbl(room_depth + 600, room_depth + 1000);
+        double grass_height = rnd_dbl(0.5, 1.5);
+        init(&grass_base, grass_x, 0, grass_z);
+        init(&grass_left, grass_x - 0.2, grass_height, grass_z);
+        init(&grass_right, grass_x + 0.2, grass_height, grass_z);
+        init_triangle(&grass_blades[grass_i], grass_base, grass_left, grass_right, grass_mat);
+        add_list_no_pdf(&world, &grass_blades[grass_i], &hit_triangle, &get_triangle_box);
+    }
+    
+    // Pine trees (very far away, simple triangles)
+    int num_trees = 12;
+    triangle *tree_triangles = malloc(num_trees * sizeof(triangle));
+    quad *tree_trunks = malloc(num_trees * sizeof(quad));
+    int tree_i;
+    for(tree_i = 0; tree_i < num_trees; tree_i++){
+        double tree_x = rnd_dbl(room_width / 2.0 - 800, room_width / 2.0 + 800);
+        double tree_z = rnd_dbl(room_depth + 2000, room_depth + 4000);
+        double tree_height = rnd_dbl(60, 100);
+        double trunk_height = tree_height * 0.25;
+        double trunk_width = 4;
+        double tree_width = tree_height * 0.5;
+        
+        // Trunk (vertical quad)
+        point3 trunk_Q;
+        vector3 trunk_u, trunk_v;
+        init(&trunk_Q, tree_x - trunk_width/2.0, 0, tree_z);
+        init(&trunk_u, trunk_width, 0, 0);
+        init(&trunk_v, 0, trunk_height, 0);
+        init_quad(&tree_trunks[tree_i], trunk_Q, trunk_u, trunk_v, trunk_mat);
+        add_list_no_pdf(&world, &tree_trunks[tree_i], &hit_quad, &get_quad_box);
+        
+        // Single triangle for pine shape
+        point3 tree_top, tree_left, tree_right;
+        init(&tree_top, tree_x, trunk_height + tree_height, tree_z);
+        init(&tree_left, tree_x - tree_width, trunk_height, tree_z - tree_width * 0.5);
+        init(&tree_right, tree_x + tree_width, trunk_height, tree_z + tree_width * 0.5);
+        init_triangle(&tree_triangles[tree_i], tree_top, tree_left, tree_right, tree_mat);
+        add_list_no_pdf(&world, &tree_triangles[tree_i], &hit_triangle, &get_triangle_box);
+    }
+    
+    // Cloud clumps (smaller spheres, more of them, slight color variation)
+    int num_clouds = 120;
+    sphere *clouds = malloc(num_clouds * sizeof(sphere));
+    constant_medium *cloud_volumes = malloc(num_clouds * sizeof(constant_medium));
+    point3 cloud_pos;
+    
+    // Clump 1 - left side, white
+    int i;
+    for(i = 0; i < 30; i++){
+        init(&cloud_pos, 
+             rnd_dbl(room_width / 2.0 - 500, room_width / 2.0 - 200), 
+             rnd_dbl(280, 380), 
+             rnd_dbl(room_depth + 800, room_depth + 1500));
+        
+        double cloud_size = rnd_dbl(20, 40);
+        init_sphere(&clouds[i], cloud_pos, cloud_size, cloud_white_mat);
+        
+        init_constant_medium(&cloud_volumes[i], &clouds[i], &hit_sphere, 
+                           0.015, clouds[i].bbox, cloud_white);
+        
+        add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
+                       &get_constant_medium_box);
+    }
+    
+    // Clump 2 - center, light gray
+    for(i = 30; i < 60; i++){
+        init(&cloud_pos, 
+             rnd_dbl(room_width / 2.0 - 150, room_width / 2.0 + 150), 
+             rnd_dbl(300, 400), 
+             rnd_dbl(room_depth + 1000, room_depth + 1800));
+        
+        double cloud_size = rnd_dbl(25, 45);
+        init_sphere(&clouds[i], cloud_pos, cloud_size, cloud_light_mat);
+        
+        init_constant_medium(&cloud_volumes[i], &clouds[i], &hit_sphere, 
+                           0.012, clouds[i].bbox, cloud_light);
+        
+        add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
+                       &get_constant_medium_box);
+    }
+    
+    // Clump 3 - right side, gray
+    for(i = 60; i < 90; i++){
+        init(&cloud_pos, 
+             rnd_dbl(room_width / 2.0 + 200, room_width / 2.0 + 500), 
+             rnd_dbl(260, 360), 
+             rnd_dbl(room_depth + 700, room_depth + 1400));
+        
+        double cloud_size = rnd_dbl(22, 42);
+        init_sphere(&clouds[i], cloud_pos, cloud_size, cloud_gray_mat);
+        
+        init_constant_medium(&cloud_volumes[i], &clouds[i], &hit_sphere, 
+                           0.013, clouds[i].bbox, cloud_gray);
+        
+        add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
+                       &get_constant_medium_box);
+    }
+    
+    // Clump 4 - scattered background, very light
+    for(i = 90; i < 120; i++){
+        init(&cloud_pos, 
+             rnd_dbl(room_width / 2.0 - 600, room_width / 2.0 + 600), 
+             rnd_dbl(320, 450), 
+             rnd_dbl(room_depth + 1500, room_depth + 2500));
+        
+        double cloud_size = rnd_dbl(30, 50);
+        init_sphere(&clouds[i], cloud_pos, cloud_size, cloud_white_mat);
+        
+        init_constant_medium(&cloud_volumes[i], &clouds[i], &hit_sphere, 
+                           0.010, clouds[i].bbox, cloud_white);
+        
+        add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
+                       &get_constant_medium_box);
+    }
+    
+    // Build BVH
+    bvh_node root;
+    init_bvh(&root, &world);
+    
+    delete_list(&world);
+    init_list(&world);
+    add_list_no_pdf(&world, &root, &hit_bvh, &get_bvh_box);
+    
+    // Camera setup
+    camera cam;
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 1920;
+    cam.samples_per_pixel = 5;
+    
+    init(&(cam.background), sky_bg.e[0], sky_bg.e[1], sky_bg.e[2]);
+    cam.sky = NULL;
+    
+    cam.max_depth = 50;
+    cam.vfov = 60;
+    
+    point3 f, a, v;
+    init(&f, 180, 140, 150);
+    init(&a, room_width / 2.0, 160, room_depth + 20);
+    init(&v, 0, 1, 0);
+    
+    copy(&(cam.lookfrom), f);
+    copy(&(cam.lookat), a);
+    copy(&(cam.vup), v);
+    
+    cam.defocus_angle = 0.8;
+    cam.focus_dist = 450;
+    
+    render(&cam, &world, &priorities);
+    
+    // Cleanup
+    for(i = 0; i < num_clouds; i++){
+        delete_texture(&(cloud_volumes[i].phase_func.tex));
+    }
+    free(clouds);
+    free(cloud_volumes);
+    
+    free(rocks);
+    free(grass_blades);
+    free(tree_triangles);
+    free(tree_trunks);
+    free(left_wall_papers);
+    free(right_wall_papers);
+    free(left_section_papers);
+    free(right_section_papers);
+    
+    delete_texture(&(wall_mat.tex));
+    delete_texture(&(floor_mat.tex));
+    delete_texture(&(trim_mat.tex));
+    delete_texture(&(dark_trim_mat.tex));
+    delete_texture(&(glass_mat.tex));
+    delete_texture(&(warm_light_mat.tex));
+    delete_texture(&(cool_light_mat.tex));
+    delete_texture(&(cloud_white_mat.tex));
+    delete_texture(&(cloud_gray_mat.tex));
+    delete_texture(&(cloud_light_mat.tex));
+    delete_texture(&(ground_mat.tex));
+    delete_texture(&(grass_mat.tex));
+    delete_texture(&(rock_mat.tex));
+    delete_texture(&(tree_mat.tex));
+    delete_texture(&(trunk_mat.tex));
+    delete_image_tex(&wallpaper_tex);
+    delete_image_tex(&floor_tex);
+    
+    delete_cube(window_frame_top);
+    delete_cube(window_frame_bottom);
+    delete_cube(window_frame_left);
+    delete_cube(window_frame_right);
+    delete_cube(left_baseboard);
+    delete_cube(right_baseboard);
+    delete_cube(back_baseboard);
+    delete_cube(front_baseboard);
+    
+    delete_bvh(&root);
+    delete_list(&priorities);
+    delete_list(&world);
+}
+
 void render_scene(int scene_id){
     switch(scene_id){
         case 1: cornell_box(); break;
@@ -536,5 +1143,6 @@ void render_scene(int scene_id){
         case 3: test_skybox(); break;
         case 4: space(); break;
         case 5: teapot(); break;
+        case 6: cinematic_room(); break;
     }   
 }
