@@ -190,94 +190,150 @@ void render(camera *c, const hittable_list *world, const hittable_list *prioriti
     
     initialize(c);
     
-    // Calculate work distribution - each process gets a contiguous chunk of rows
-    int rows_per_process = c->image_height / num_processes;
-    int remainder = c->image_height % num_processes;
+    // Use tiled rendering for better load balancing
+    // Each tile is TILE_SIZE x TILE_SIZE pixels
+    #define TILE_SIZE 16
     
-    int start_row = rank * rows_per_process + (rank < remainder ? rank : remainder);
-    int end_row = start_row + rows_per_process + (rank < remainder ? 1 : 0);
-    int local_rows = end_row - start_row;
+    int tiles_x = (c->image_width + TILE_SIZE - 1) / TILE_SIZE;
+    int tiles_y = (c->image_height + TILE_SIZE - 1) / TILE_SIZE;
+    int total_tiles = tiles_x * tiles_y;
     
-    // Allocate local buffer for this process's rows
-    uint8_t *local_raster = (uint8_t *) malloc(local_rows * c->image_width * 4 * sizeof(uint8_t));
+    // Calculate tiles per process
+    int tiles_per_process = total_tiles / num_processes;
+    int remainder_tiles = total_tiles % num_processes;
     
-    // Render assigned rows
+    int start_tile = rank * tiles_per_process + (rank < remainder_tiles ? rank : remainder_tiles);
+    int end_tile = start_tile + tiles_per_process + (rank < remainder_tiles ? 1 : 0);
+    
+    // Allocate full raster for each process (sparse writes)
+    uint8_t *local_raster = (uint8_t *) calloc(c->image_height * c->image_width * 4, sizeof(uint8_t));
+    
+    // Render assigned tiles
     color pixel_color;
     int i, j, s_i, s_j, sample;
     double illum, illumSum, illumSqrSum, sigSqr;
     
-    for(j = start_row; j < end_row; j++){
-        if(rank == 0){
-            int local_j = j - start_row;
-            double percent = (100.0 * local_j) / local_rows;
-            fprintf(stderr, "\rRendering: %.1f%%        ", percent);
-            fflush(stderr);
-        }
+    // Calculate total pixels this process will render
+    long long total_pixels = 0;
+    for(int tile_idx = start_tile; tile_idx < end_tile; tile_idx++){
+        int tile_y = tile_idx / tiles_x;
+        int tile_x = tile_idx % tiles_x;
+        int row_start = tile_y * TILE_SIZE;
+        int row_end = (row_start + TILE_SIZE < c->image_height) ? row_start + TILE_SIZE : c->image_height;
+        int col_start = tile_x * TILE_SIZE;
+        int col_end = (col_start + TILE_SIZE < c->image_width) ? col_start + TILE_SIZE : c->image_width;
+        total_pixels += (row_end - row_start) * (col_end - col_start);
+    }
+    
+    long long pixels_done = 0;
+    long long estimated_work = total_pixels * c->samples_per_pixel;
+    
+    // For large renders with high sample counts, report more frequently
+    int pixel_report_interval;
+    if(estimated_work > 100000){
+        // Report approximately every 0.5% of progress
+        pixel_report_interval = total_pixels / 200;
+        if(pixel_report_interval < 1) pixel_report_interval = 1;
+    } else {
+        // For small renders, report less frequently
+        pixel_report_interval = total_pixels / 10;
+        if(pixel_report_interval < 1) pixel_report_interval = 1;
+    }
+    
+    // Process each tile assigned to this rank
+    for(int tile_idx = start_tile; tile_idx < end_tile; tile_idx++){
+        int tile_y = tile_idx / tiles_x;
+        int tile_x = tile_idx % tiles_x;
         
-        int local_j = j - start_row; // Index into local_raster
+        int row_start = tile_y * TILE_SIZE;
+        int row_end = (row_start + TILE_SIZE < c->image_height) ? row_start + TILE_SIZE : c->image_height;
+        int col_start = tile_x * TILE_SIZE;
+        int col_end = (col_start + TILE_SIZE < c->image_width) ? col_start + TILE_SIZE : c->image_width;
         
-        for(i = 0; i < c->image_width; i++){
-            init(&pixel_color, 0, 0, 0);
-            illumSum = 0;
-            illumSqrSum = 0;
-            
-            for(sample = 1; sample <= c->samples_per_pixel; ){
+        for(j = row_start; j < row_end; j++){
+            for(i = col_start; i < col_end; i++){
+                init(&pixel_color, 0, 0, 0);
+                illumSum = 0;
+                illumSqrSum = 0;
                 
-                //doing batch of stratified sampling
-                //checking for pixel illuminance convergence after each batch
-                for(s_j = 0; s_j < c->sqrt_spb; s_j++){
-                    for(s_i = 0; s_i < c->sqrt_spb; s_i++){
-                        ray r = get_ray(c, i, j, s_i, s_j);
+                int samples_for_pixel = 0;
+                for(sample = 1; sample <= c->samples_per_pixel; ){
+                    
+                    //doing batch of stratified sampling
+                    //checking for pixel illuminance convergence after each batch
+                    for(s_j = 0; s_j < c->sqrt_spb; s_j++){
+                        for(s_i = 0; s_i < c->sqrt_spb; s_i++){
+                            ray r = get_ray(c, i, j, s_i, s_j);
 
-                        color sampleColor;
-                        copy(&sampleColor, ray_color(r, c->max_depth, world, priorities, c->background, c->sky));
-                        illum = illuminance(sampleColor);
-                        illumSum += illum;
-                        illumSqrSum += illum * illum;
+                            color sampleColor;
+                            copy(&sampleColor, ray_color(r, c->max_depth, world, priorities, c->background, c->sky));
+                            illum = illuminance(sampleColor);
+                            illumSum += illum;
+                            illumSqrSum += illum * illum;
 
-                        add_vector(&pixel_color, sampleColor);
+                            add_vector(&pixel_color, sampleColor);
 
-                        sample++;
+                            sample++;
+                            samples_for_pixel++;
+                        }
                     }
+
+                    //checking if pixel illuminance has converged and the average
+                    //sampled illuminance is within a 95% confidence interval.
+                    //EQ is reqrranged to avoid divisions and square roots
+                    //Stopping sampling early if so.
+                    sigSqr = ((illumSqrSum * sample) - (illumSum * illumSum)) / ((sample * sample) - sample);
+                    if(Z_95_VALUE_SQR * sample * sigSqr <= MAX_TOLERANCE_SQR * illumSum * illumSum) break;
                 }
 
-                //checking if pixel illuminance has converged and the average
-                //sampled illuminance is within a 95% confidence interval.
-                //EQ is reqrranged to avoid divisions and square roots
-                //Stopping sampling early if so.
-                sigSqr = ((illumSqrSum * sample) - (illumSum * illumSum)) / ((sample * sample) - sample);
-                if(Z_95_VALUE_SQR * sample * sigSqr <= MAX_TOLERANCE_SQR * illumSum * illumSum) break;
+                scale(&pixel_color, 1.0 / samples_for_pixel);
+                print_color(pixel_color, local_raster + 4*((j * c->image_width) + i), !c->sky);
+                
+                // Update pixel counter
+                pixels_done++;
+                
+                // Report progress at calculated intervals (only rank 0)
+                if(rank == 0 && (pixels_done % pixel_report_interval == 0 || pixels_done == total_pixels)){
+                    double percent = (100.0 * pixels_done) / total_pixels;
+                    fprintf(stderr, "\rRendering: %.2f%%        ", percent);
+                    fflush(stderr);
+                }
             }
-
-            scale(&pixel_color, 1.0 / sample);
-            print_color(pixel_color, local_raster + 4*((local_j * c->image_width) + i), !c->sky);
         }
     }
     
     // Rank 0 gathers all data and writes the file
     if(rank == 0){
-        fprintf(stderr, "\rRendering: 100.0%%        \n");
+        fprintf(stderr, "\rRendering: 100.00%%        \n");
         fprintf(stderr, "Aggregating results...\n");
         fflush(stderr);
         
         uint8_t *full_raster = (uint8_t *) malloc(c->image_height * c->image_width * 4 * sizeof(uint8_t));
         
         // Copy rank 0's data
-        memcpy(full_raster, local_raster, local_rows * c->image_width * 4 * sizeof(uint8_t));
+        memcpy(full_raster, local_raster, c->image_height * c->image_width * 4 * sizeof(uint8_t));
         
         // Gather data from other processes
+        // We need to OR the data together since each process wrote to different tiles
         for(int src = 1; src < num_processes; src++){
-            int src_rows_per_process = c->image_height / num_processes;
-            int src_start_row = src * src_rows_per_process + (src < remainder ? src : remainder);
-            int src_local_rows = src_rows_per_process + (src < remainder ? 1 : 0);
+            uint8_t *recv_buffer = (uint8_t *) malloc(c->image_height * c->image_width * 4 * sizeof(uint8_t));
             
-            MPI_Recv(full_raster + 4 * src_start_row * c->image_width,
-                     src_local_rows * c->image_width * 4,
+            MPI_Recv(recv_buffer,
+                     c->image_height * c->image_width * 4,
                      MPI_UNSIGNED_CHAR,
                      src,
                      0,
                      MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
+            
+            // Combine the buffers - any non-zero pixel overwrites zeros
+            for(int idx = 0; idx < c->image_height * c->image_width * 4; idx++){
+                if(recv_buffer[idx] != 0){
+                    full_raster[idx] = recv_buffer[idx];
+                }
+            }
+            
+            free(recv_buffer);
         }
         
         // Write the image file
@@ -295,7 +351,7 @@ void render(camera *c, const hittable_list *world, const hittable_list *prioriti
     } else {
         // Send data to rank 0
         MPI_Send(local_raster,
-                 local_rows * c->image_width * 4,
+                 c->image_height * c->image_width * 4,
                  MPI_UNSIGNED_CHAR,
                  0,
                  0,
