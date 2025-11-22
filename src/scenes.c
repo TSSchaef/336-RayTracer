@@ -551,7 +551,7 @@ void cinematic_room(){
     init(&cloud_white, 1.0, 1.0, 1.0);        // Pure white for clouds
     init(&cloud_gray, 0.85, 0.87, 0.90);      // Light gray clouds
     init(&cloud_light, 0.95, 0.96, 0.98);     // Very light clouds
-    init(&ground_green, 0.12, 0.2, 0.08);      // Dark ground green
+    init(&ground_green, 0.2, 0.3, 0.15);      // Dark ground green
     init(&grass_green, 0.3, 0.5, 0.2);        // Bright grass
     init(&rock_gray, 0.4, 0.4, 0.42);         // Gray rocks
     init(&tree_green, 0.15, 0.25, 0.12);      // Dark pine green
@@ -720,8 +720,8 @@ void cinematic_room(){
     init_sphere(&hidden_light2, light2_pos, 40, cool_light_mat);
     add_list(&world, &hidden_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     add_list(&world, &hidden_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
-    //add_list(&priorities, &hidden_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
-    //add_list(&priorities, &hidden_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &hidden_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &hidden_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     
     // Simple window pane
     quad window_pane;
@@ -891,83 +891,72 @@ void cinematic_room(){
     init(&blwin_v, 0, window_bottom - frame_thickness*2, 0);
     init_quad(&below_window, blwin_Q, blwin_u, blwin_v, wall_mat);
     add_list_no_pdf(&world, &below_window, &hit_quad, &get_quad_box);
-   
-
-
-    // Outdoor scene - ground plane (extended to behind room and wider)
+    
+    // Outdoor scene - ground plane (far away)
     quad ground;
     point3 ground_Q;
     vector3 ground_u, ground_v;
-    init(&ground_Q, -3000, -5, -500);  // Extended behind room and lowered
-    init(&ground_u, 7000, 0, 0);       // Much wider
-    init(&ground_v, 0, 0, 6000);       // Extended depth
+    init(&ground_Q, -2000, 0, room_depth + 500);
+    init(&ground_u, 5000, 0, 0);
+    init(&ground_v, 0, 0, 5000);
     init_quad(&ground, ground_Q, ground_u, ground_v, ground_mat);
     add_list_no_pdf(&world, &ground, &hit_quad, &get_quad_box);
     
-    // Outdoor light sources (positioned high and to sides, 25% brighter)
+    // Outdoor light sources (positioned high and to sides)
     sphere outdoor_light1, outdoor_light2, outdoor_light3;
     point3 out_light1_pos, out_light2_pos, out_light3_pos;
     init(&out_light1_pos, room_width / 2.0 - 500, 600, room_depth + 300);
     init(&out_light2_pos, room_width / 2.0 + 500, 600, room_depth + 300);
     init(&out_light3_pos, room_width / 2.0, 700, room_depth + 200);
-    
-    // Creating brighter outdoor light materials (25% increase)
-    color warm_outdoor, cool_outdoor;
-    init(&warm_outdoor, 187.5, 162.5, 125);
-    init(&cool_outdoor, 125, 137.5, 162.5);
-    material warm_outdoor_mat, cool_outdoor_mat;
-    init_diffuse_light(&warm_outdoor_mat, warm_outdoor);
-    init_diffuse_light(&cool_outdoor_mat, cool_outdoor);
-    
-    init_sphere(&outdoor_light1, out_light1_pos, 50, warm_outdoor_mat);
-    init_sphere(&outdoor_light2, out_light2_pos, 50, warm_outdoor_mat);
-    init_sphere(&outdoor_light3, out_light3_pos, 60, cool_outdoor_mat);
+    init_sphere(&outdoor_light1, out_light1_pos, 50, warm_light_mat);
+    init_sphere(&outdoor_light2, out_light2_pos, 50, warm_light_mat);
+    init_sphere(&outdoor_light3, out_light3_pos, 60, cool_light_mat);
     add_list(&world, &outdoor_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     add_list(&world, &outdoor_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     add_list(&world, &outdoor_light3, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
-    //add_list(&priorities, &outdoor_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
-    //add_list(&priorities, &outdoor_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
-    //add_list(&priorities, &outdoor_light3, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &outdoor_light1, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &outdoor_light2, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
+    add_list(&priorities, &outdoor_light3, &hit_sphere, &get_sphere_box, &sphere_pdf_value, &sphere_pdf_generate);
     
-    // Small rocks scattered on ground (more rocks, properly placed on visible ground)
-    int num_rocks = 120;
+    // Small rocks scattered on ground (very small, far away)
+    int num_rocks = 40;
     sphere *rocks = malloc(num_rocks * sizeof(sphere));
     int rock_i;
     for(rock_i = 0; rock_i < num_rocks; rock_i++){
         point3 rock_pos;
         init(&rock_pos, 
-             rnd_dbl(room_width / 2.0 - 600, room_width / 2.0 + 600),
+             rnd_dbl(room_width / 2.0 - 300, room_width / 2.0 + 300),
              rnd_dbl(0.2, 0.5),
-             rnd_dbl(room_depth + 50, room_depth + 2000));
-        init_sphere(&rocks[rock_i], rock_pos, rnd_dbl(0.2, 0.8), rock_mat);
-        //add_list_no_pdf(&world, &rocks[rock_i], &hit_sphere, &get_sphere_box);
+             rnd_dbl(room_depth + 600, room_depth + 1200));
+        init_sphere(&rocks[rock_i], rock_pos, rnd_dbl(0.2, 0.6), rock_mat);
+        add_list_no_pdf(&world, &rocks[rock_i], &hit_sphere, &get_sphere_box);
     }
     
-    // Grass blades (more grass, visible through window)
-    int num_grass = 250;
+    // Grass blades (tiny triangles, far away)
+    int num_grass = 80;
     triangle *grass_blades = malloc(num_grass * sizeof(triangle));
     int grass_i;
     for(grass_i = 0; grass_i < num_grass; grass_i++){
         point3 grass_base, grass_left, grass_right;
-        double grass_x = rnd_dbl(room_width / 2.0 - 500, room_width / 2.0 + 500);
-        double grass_z = rnd_dbl(room_depth + 50, room_depth + 1500);
-        double grass_height = rnd_dbl(0.5, 2.0);
+        double grass_x = rnd_dbl(room_width / 2.0 - 300, room_width / 2.0 + 300);
+        double grass_z = rnd_dbl(room_depth + 600, room_depth + 1000);
+        double grass_height = rnd_dbl(0.5, 1.5);
         init(&grass_base, grass_x, 0, grass_z);
-        init(&grass_left, grass_x - 0.3, grass_height, grass_z);
-        init(&grass_right, grass_x + 0.3, grass_height, grass_z);
+        init(&grass_left, grass_x - 0.2, grass_height, grass_z);
+        init(&grass_right, grass_x + 0.2, grass_height, grass_z);
         init_triangle(&grass_blades[grass_i], grass_base, grass_left, grass_right, grass_mat);
-        //add_list_no_pdf(&world, &grass_blades[grass_i], &hit_triangle, &get_triangle_box);
+        add_list_no_pdf(&world, &grass_blades[grass_i], &hit_triangle, &get_triangle_box);
     }
     
-    // Pine trees (positioned to be visible through window)
-    int num_trees = 20;
+    // Pine trees (very far away, simple triangles)
+    int num_trees = 12;
     triangle *tree_triangles = malloc(num_trees * sizeof(triangle));
     quad *tree_trunks = malloc(num_trees * sizeof(quad));
     int tree_i;
     for(tree_i = 0; tree_i < num_trees; tree_i++){
-        double tree_x = rnd_dbl(room_width / 2.0 - 400, room_width / 2.0 + 400);
-        double tree_z = rnd_dbl(room_depth + 1000, room_depth + 3500);
-        double tree_height = rnd_dbl(50, 90);
+        double tree_x = rnd_dbl(room_width / 2.0 - 800, room_width / 2.0 + 800);
+        double tree_z = rnd_dbl(room_depth + 2000, room_depth + 4000);
+        double tree_height = rnd_dbl(60, 100);
         double trunk_height = tree_height * 0.25;
         double trunk_width = 4;
         double tree_width = tree_height * 0.5;
@@ -979,7 +968,7 @@ void cinematic_room(){
         init(&trunk_u, trunk_width, 0, 0);
         init(&trunk_v, 0, trunk_height, 0);
         init_quad(&tree_trunks[tree_i], trunk_Q, trunk_u, trunk_v, trunk_mat);
-        //add_list_no_pdf(&world, &tree_trunks[tree_i], &hit_quad, &get_quad_box);
+        add_list_no_pdf(&world, &tree_trunks[tree_i], &hit_quad, &get_quad_box);
         
         // Single triangle for pine shape
         point3 tree_top, tree_left, tree_right;
@@ -987,10 +976,10 @@ void cinematic_room(){
         init(&tree_left, tree_x - tree_width, trunk_height, tree_z - tree_width * 0.5);
         init(&tree_right, tree_x + tree_width, trunk_height, tree_z + tree_width * 0.5);
         init_triangle(&tree_triangles[tree_i], tree_top, tree_left, tree_right, tree_mat);
-        //add_list_no_pdf(&world, &tree_triangles[tree_i], &hit_triangle, &get_triangle_box);
+        add_list_no_pdf(&world, &tree_triangles[tree_i], &hit_triangle, &get_triangle_box);
     }
     
-    // Cloud clumps (repositioned to be visible through window)
+    // Cloud clumps (smaller spheres, more of them, slight color variation)
     int num_clouds = 120;
     sphere *clouds = malloc(num_clouds * sizeof(sphere));
     constant_medium *cloud_volumes = malloc(num_clouds * sizeof(constant_medium));
@@ -1000,9 +989,9 @@ void cinematic_room(){
     int i;
     for(i = 0; i < 30; i++){
         init(&cloud_pos, 
-             rnd_dbl(room_width / 2.0 - 350, room_width / 2.0 - 100), 
-             rnd_dbl(200, 320), 
-             rnd_dbl(room_depth + 800, room_depth + 2000));
+             rnd_dbl(room_width / 2.0 - 500, room_width / 2.0 - 200), 
+             rnd_dbl(280, 380), 
+             rnd_dbl(room_depth + 800, room_depth + 1500));
         
         double cloud_size = rnd_dbl(20, 40);
         init_sphere(&clouds[i], cloud_pos, cloud_size, cloud_white_mat);
@@ -1010,16 +999,16 @@ void cinematic_room(){
         init_constant_medium(&cloud_volumes[i], &clouds[i], &hit_sphere, 
                            0.015, clouds[i].bbox, cloud_white);
         
-        //add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
-                       //&get_constant_medium_box);
+        add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
+                       &get_constant_medium_box);
     }
     
     // Clump 2 - center, light gray
     for(i = 30; i < 60; i++){
         init(&cloud_pos, 
              rnd_dbl(room_width / 2.0 - 150, room_width / 2.0 + 150), 
-             rnd_dbl(220, 350), 
-             rnd_dbl(room_depth + 1200, room_depth + 2500));
+             rnd_dbl(300, 400), 
+             rnd_dbl(room_depth + 1000, room_depth + 1800));
         
         double cloud_size = rnd_dbl(25, 45);
         init_sphere(&clouds[i], cloud_pos, cloud_size, cloud_light_mat);
@@ -1027,16 +1016,16 @@ void cinematic_room(){
         init_constant_medium(&cloud_volumes[i], &clouds[i], &hit_sphere, 
                            0.012, clouds[i].bbox, cloud_light);
         
-        //add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
-                       //&get_constant_medium_box);
+        add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
+                       &get_constant_medium_box);
     }
     
     // Clump 3 - right side, gray
     for(i = 60; i < 90; i++){
         init(&cloud_pos, 
-             rnd_dbl(room_width / 2.0 + 100, room_width / 2.0 + 350), 
-             rnd_dbl(190, 310), 
-             rnd_dbl(room_depth + 900, room_depth + 2200));
+             rnd_dbl(room_width / 2.0 + 200, room_width / 2.0 + 500), 
+             rnd_dbl(260, 360), 
+             rnd_dbl(room_depth + 700, room_depth + 1400));
         
         double cloud_size = rnd_dbl(22, 42);
         init_sphere(&clouds[i], cloud_pos, cloud_size, cloud_gray_mat);
@@ -1044,16 +1033,16 @@ void cinematic_room(){
         init_constant_medium(&cloud_volumes[i], &clouds[i], &hit_sphere, 
                            0.013, clouds[i].bbox, cloud_gray);
         
-        //add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
-                       //&get_constant_medium_box);
+        add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
+                       &get_constant_medium_box);
     }
     
     // Clump 4 - scattered background, very light
     for(i = 90; i < 120; i++){
         init(&cloud_pos, 
-             rnd_dbl(room_width / 2.0 - 400, room_width / 2.0 + 400), 
-             rnd_dbl(250, 380), 
-             rnd_dbl(room_depth + 1800, room_depth + 3500));
+             rnd_dbl(room_width / 2.0 - 600, room_width / 2.0 + 600), 
+             rnd_dbl(320, 450), 
+             rnd_dbl(room_depth + 1500, room_depth + 2500));
         
         double cloud_size = rnd_dbl(30, 50);
         init_sphere(&clouds[i], cloud_pos, cloud_size, cloud_white_mat);
@@ -1061,8 +1050,8 @@ void cinematic_room(){
         init_constant_medium(&cloud_volumes[i], &clouds[i], &hit_sphere, 
                            0.010, clouds[i].bbox, cloud_white);
         
-        //add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
-                       //&get_constant_medium_box);
+        add_list_no_pdf(&world, &cloud_volumes[i], &hit_constant_medium, 
+                       &get_constant_medium_box);
     }
     
     // Build BVH
@@ -1076,12 +1065,10 @@ void cinematic_room(){
     // Camera setup
     camera cam;
     cam.aspect_ratio = 16.0 / 9.0;
-    cam.image_width = 3840;
-    //cam.image_width = 1920;
-    cam.samples_per_pixel = 5000;
+    cam.image_width = 1920;
+    cam.samples_per_pixel = 5;
     
     init(&(cam.background), sky_bg.e[0], sky_bg.e[1], sky_bg.e[2]);
-
     cam.sky = NULL;
     
     cam.max_depth = 50;
@@ -1125,8 +1112,6 @@ void cinematic_room(){
     delete_texture(&(warm_light_mat.tex));
     delete_texture(&(cool_light_mat.tex));
     delete_texture(&(cloud_white_mat.tex));
-    delete_texture(&(warm_outdoor_mat.tex));
-    delete_texture(&(cool_outdoor_mat.tex));
     delete_texture(&(cloud_gray_mat.tex));
     delete_texture(&(cloud_light_mat.tex));
     delete_texture(&(ground_mat.tex));
